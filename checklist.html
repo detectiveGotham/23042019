@@ -65,15 +65,31 @@
         .modal-content { background-color: var(--main-bg); border: 2px solid var(--text-color); }
         .calendar-day.today { border: 2px solid var(--primary-color); border-radius: 50%; }
         .calendar-day.bookmarked { box-shadow: 0 0 0 2px var(--accent-color) inset; border-radius: 4px; }
-        .checkbox-icon { font-family: "Font Awesome 6 Free"; font-weight: 900; display: inline-block; width: 1.25rem; text-align: center; cursor: pointer; }
+        
+        .custom-checkbox {
+            width: 24px; height: 24px; border: 2px solid var(--secondary-color); cursor: pointer;
+            position: relative; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+            transition: background-color 0.2s;
+        }
+        .custom-checkbox.checked { background-color: var(--accent-color); border-color: var(--accent-color); }
+        .custom-checkbox.checked::after {
+            content: '✓'; font-size: 20px; font-weight: bold; color: var(--main-bg);
+            position: absolute; top: -2px;
+        }
+        
         .collapse-icon { transition: transform 0.2s ease-in-out; }
         .collapsed .collapse-icon { transform: rotate(-90deg); }
         .completed-task > span { text-decoration: line-through; color: var(--text-muted-color); }
         .dragging { opacity: 0.5; }
         .drag-over { border-top: 2px solid var(--primary-color); }
+        #video-background { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -10; pointer-events: none; }
+        #video-background iframe { width: 100%; height: 100%; }
     </style>
 </head>
 <body class="theme-classic">
+
+    <div id="video-background" class="hidden"></div>
+    <button id="close-video-bg-btn" class="hidden fixed top-4 right-28 z-50 retro-btn secondary">Close Video</button>
 
     <div id="logged-out-view" class="hidden h-screen flex items-center justify-center p-4">
         <div class="surface p-12 space-y-4 text-center">
@@ -87,6 +103,7 @@
         <header class="p-4 flex justify-between items-center border-b-2" style="border-color: var(--border-color);">
             <h1 class="text-3xl">PRODUCTIVITY HUB</h1>
             <div class="flex items-center gap-4">
+                <a href="focus.html" class="retro-btn">FORGE</a>
                 <div id="theme-switcher" class="flex items-center space-x-1"></div>
                 <div id="save-status" class="text-sm text-muted"></div>
                 <button id="sign-out-btn" class="retro-btn secondary">QUIT</button>
@@ -96,6 +113,14 @@
         <div class="flex flex-col md:flex-row">
             <!-- Sidebar -->
             <aside class="w-full md:w-1/3 lg:w-1/4 p-4 space-y-6 border-b-2 md:border-b-0 md:border-r-2" style="border-color: var(--border-color);">
+                <div class="surface p-4">
+                    <h2 class="text-xl mb-2">STOPWATCH</h2>
+                    <p id="stopwatch-display" class="text-5xl text-center font-mono">00:00:00</p>
+                    <div class="flex justify-center gap-2 mt-4">
+                        <button id="start-pause-stopwatch-btn" class="retro-btn w-24">START</button>
+                        <button id="reset-stopwatch-btn" class="retro-btn secondary w-24">RESET</button>
+                    </div>
+                </div>
                 <div class="surface p-4">
                     <h2 class="text-xl mb-2">ACHIEVEMENTS</h2>
                     <div class="border-2 p-4 text-center" style="border-color: var(--secondary-color);">
@@ -111,15 +136,6 @@
                         <button id="next-month-btn" class="retro-btn secondary">&gt;</button>
                     </div>
                     <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-sm mb-2"></div>
-                    <button id="today-btn" class="retro-btn w-full">TODAY</button>
-                </div>
-                <div class="surface p-4">
-                    <h2 class="text-xl mb-2">STOPWATCH</h2>
-                    <p id="stopwatch-display" class="text-5xl text-center font-mono">00:00:00</p>
-                    <div class="flex justify-center gap-2 mt-4">
-                        <button id="start-pause-stopwatch-btn" class="retro-btn w-24">START</button>
-                        <button id="reset-stopwatch-btn" class="retro-btn secondary w-24">RESET</button>
-                    </div>
                 </div>
             </aside>
 
@@ -187,7 +203,6 @@
         const calendarHeader = document.getElementById('calendar-header');
         const prevMonthBtn = document.getElementById('prev-month-btn');
         const nextMonthBtn = document.getElementById('next-month-btn');
-        const todayBtn = document.getElementById('today-btn');
         
         // Stopwatch
         const stopwatchDisplay = document.getElementById('stopwatch-display');
@@ -201,6 +216,10 @@
 
         // Theme
         const themeSwitcher = document.getElementById('theme-switcher');
+        
+        // Video Background
+        const videoBackground = document.getElementById('video-background');
+        const closeVideoBgBtn = document.getElementById('close-video-bg-btn');
 
         let tasksUnsubscribe = null;
         let settingsUnsubscribe = null;
@@ -235,15 +254,19 @@
         const getSettings = (userId) => {
             const settingsRef = doc(db, 'users', userId, 'settings', 'userSettings');
             settingsUnsubscribe = onSnapshot(settingsRef, (doc) => {
-                const theme = doc.exists() ? doc.data().theme : 'classic';
-                applyTheme(theme);
+                const settings = doc.exists() ? doc.data() : {};
+                applyTheme(settings.theme || 'classic', settings.themeNames || {});
             });
         };
 
-        const applyTheme = (themeName) => {
+        const applyTheme = (themeName, themeNames) => {
             document.body.className = `theme-${themeName}`;
+            const defaultNames = { classic: 'C', 'wonder-woman': 'W', 'iron-man': 'I', 'batman': 'B' };
             const themes = ['classic', 'wonder-woman', 'iron-man', 'batman'];
-            themeSwitcher.innerHTML = themes.map(t => `<button data-theme="${t}" class="theme-switcher-btn ${t === themeName ? 'active' : ''}">${t.charAt(0).toUpperCase()}</button>`).join('');
+            themeSwitcher.innerHTML = themes.map(t => {
+                const name = (themeNames && themeNames[t]) ? themeNames[t] : defaultNames[t];
+                return `<button data-theme="${t}" class="theme-switcher-btn ${t === themeName ? 'active' : ''}" title="${t}" contenteditable="true" spellcheck="false">${name}</button>`
+            }).join('');
         };
 
         const saveTheme = (themeName) => {
@@ -251,6 +274,13 @@
             const settingsRef = doc(db, 'users', user.uid, 'settings', 'userSettings');
             setDoc(settingsRef, { theme: themeName }, { merge: true });
         };
+        
+        const saveThemeName = (themeId, newName) => {
+            const user = auth.currentUser; if (!user) return;
+            const settingsRef = doc(db, 'users', user.uid, 'settings', 'userSettings');
+            setDoc(settingsRef, { themeNames: { [themeId]: newName } }, { merge: true });
+        };
+
 
         // --- Data Handling & Rendering ---
         const getTasks = (userId) => {
@@ -287,14 +317,7 @@
             const hasChildren = taskNode.children && taskNode.children.length > 0;
             const isMaxDepth = level >= HIERARCHY.length - 1;
 
-            const checkboxIcons = [
-                { unchecked: 'fa-regular fa-square', checked: 'fa-solid fa-square-check' },
-                { unchecked: 'fa-regular fa-circle', checked: 'fa-solid fa-circle-check' },
-                { unchecked: 'fa-solid fa-diamond', checked: 'fa-solid fa-check-to-slot' },
-                { unchecked: 'fa-regular fa-square', checked: 'fa-solid fa-square-check' }
-            ];
-            const iconSet = checkboxIcons[level];
-            const checkboxIconClass = `${taskNode.completed ? iconSet.checked : iconSet.unchecked} ${taskNode.completed ? 'text-accent' : 'text-primary'}`;
+            const checkboxClass = `custom-checkbox ${taskNode.completed ? 'checked' : ''}`;
             
             let subjectProgressBarHTML = '';
             if (level === 0) {
@@ -311,7 +334,7 @@
             taskEl.innerHTML = `
                 <div class="task-item group p-2 rounded-lg flex items-center gap-2 surface" style="border-color: var(--secondary-color);">
                     <i class="collapse-icon fa-solid fa-chevron-down w-4 text-center text-muted ${hasChildren ? '' : 'invisible'}"></i>
-                    <i class="checkbox-icon ${checkboxIconClass}"></i>
+                    <div class="${checkboxClass}"></div>
                     <span class="flex-grow font-bold text-lg ${taskNode.completed ? 'completed-task' : ''}" contenteditable="true" spellcheck="false">${taskNode.text}</span>
                     <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button title="Add ${isMaxDepth ? '' : HIERARCHY[level+1]}" class="add-subtask-btn text-muted hover:text-green-500 ${isMaxDepth ? 'hidden' : ''}"><i class="fas fa-plus-circle"></i></button>
@@ -329,7 +352,7 @@
             span.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); span.blur(); } });
             span.addEventListener('blur', () => updateTaskText(taskNode.id, span.textContent));
             taskEl.querySelector('.collapse-icon').addEventListener('click', () => toggleCollapse(taskNode.id, !taskNode.isCollapsed));
-            taskEl.querySelector('.checkbox-icon').addEventListener('click', () => toggleTaskCompleteWithChildren(taskNode.id, !taskNode.completed));
+            taskEl.querySelector('.custom-checkbox').addEventListener('click', () => toggleTaskCompleteWithChildren(taskNode.id, !taskNode.completed));
             taskEl.querySelector('.add-subtask-btn').addEventListener('click', () => addTask(HIERARCHY[level + 1], taskNode.id, level + 1));
             taskEl.querySelector('.flag-btn').addEventListener('click', () => toggleFlag(taskNode.id, !taskNode.isFlagged));
             taskEl.querySelector('.notes-btn').addEventListener('click', () => openNotesModal(taskNode.id));
@@ -395,13 +418,6 @@
                 text, parentId, level, completed: false, isFlagged: false, isCollapsed: false, notes: '', attachments: [], createdAt: serverTimestamp()
             });
         };
-
-        addSubjectBtn.addEventListener('click', () => {
-             const subjectName = prompt("Enter new subject name:");
-             if(subjectName && subjectName.trim() !== "") {
-                 addTask(subjectName.trim(), null, 0);
-             }
-        });
         
         const updateTask = (id, data) => {
             const user = auth.currentUser; if (!user) return;
@@ -548,7 +564,6 @@
         };
         prevMonthBtn.addEventListener('click', () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1); renderCalendar(); });
         nextMonthBtn.addEventListener('click', () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1); renderCalendar(); });
-        todayBtn.addEventListener('click', () => { currentCalendarDate = new Date(); bookmarkedDate = null; renderCalendar(); });
 
         // --- Modal Logic ---
         const showModal = (content) => {
@@ -561,30 +576,70 @@
             const task = allTasks.find(t => t.id === id); if (!task) return;
             const content = `
                 <h3 class="text-xl font-bold mb-4">EDIT DETAILS</h3>
-                <input type="hidden" id="modal-task-id" value="${id}">
+                <div id="modal-attachments-list" class="space-y-2 mt-2"></div>
                 <div><label for="modal-notes" class="block text-sm font-medium">NOTES</label><textarea id="modal-notes" rows="4" class="mt-1 block w-full rounded-md shadow-sm surface border text-muted">${task.notes || ''}</textarea></div>
-                <div class="mt-4"><label class="block text-sm font-medium">ATTACHMENTS</label><div id="modal-attachments-list" class="space-y-2 mt-2"></div><div class="flex gap-2 mt-2"><input type="url" id="new-attachment-input" placeholder="https://example.com" class="flex-grow rounded-md shadow-sm surface border text-muted"><button id="add-attachment-btn" class="px-3 py-1 rounded-md retro-btn secondary">ADD</button></div></div>
-                <div class="mt-6 flex justify-end gap-3"><button id="modal-cancel-btn" class="px-4 py-2 rounded-lg retro-btn secondary">CANCEL</button><button id="modal-save-btn" class="px-4 py-2 rounded-lg retro-btn">SAVE</button></div>
+                <div class="mt-4"><label class="block text-sm font-medium">ATTACH YOUTUBE LINK</label><div class="flex gap-2 mt-2"><input type="url" id="new-attachment-input" placeholder="https://youtube.com/watch?v=..." class="flex-grow rounded-md shadow-sm surface border text-muted"><button id="add-attachment-btn" class="px-3 py-1 rounded-md retro-btn secondary">ADD</button></div></div>
+                <div class="mt-6 flex justify-end gap-3"><button id="modal-cancel-btn" class="px-4 py-2 rounded-lg retro-btn secondary">CLOSE</button><button id="modal-save-btn" class="px-4 py-2 rounded-lg retro-btn">SAVE</button></div>
             `;
             showModal(content);
-            renderAttachments(task.attachments || []);
+            renderAttachments(id, task.attachments || []);
             document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
             document.getElementById('modal-save-btn').addEventListener('click', () => {
                 const notes = document.getElementById('modal-notes').value;
-                const attachments = Array.from(document.getElementById('modal-attachments-list').querySelectorAll('a')).map(a => ({ url: a.href }));
+                const attachments = Array.from(document.getElementById('modal-attachments-list').querySelectorAll('[data-url]')).map(a => ({ url: a.dataset.url }));
                 updateTask(id, { notes, attachments });
                 closeModal();
             });
             document.getElementById('add-attachment-btn').addEventListener('click', () => {
                 const input = document.getElementById('new-attachment-input');
                 if (input.value.trim() === '') return;
-                const currentAttachments = Array.from(document.getElementById('modal-attachments-list').querySelectorAll('a')).map(a => ({ url: a.href }));
+                const currentAttachments = Array.from(document.getElementById('modal-attachments-list').querySelectorAll('[data-url]')).map(a => ({ url: a.dataset.url }));
                 currentAttachments.push({ url: input.value });
-                renderAttachments(currentAttachments);
+                renderAttachments(id, currentAttachments);
                 input.value = '';
             });
         };
         
+        const renderAttachments = (taskId, attachments) => {
+            const container = document.getElementById('modal-attachments-list');
+            container.innerHTML = '';
+            attachments.forEach((att, index) => {
+                const el = document.createElement('div');
+                el.className = 'flex items-center gap-2 surface p-2';
+                el.dataset.url = att.url;
+                
+                let contentHTML = `<a href="${att.url}" target="_blank" class="text-blue-400 truncate flex-grow">${att.url}</a>`;
+                const youtubeId = att.url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                if (youtubeId) {
+                    contentHTML = `
+                        <div class="flex-grow">
+                            <iframe class="w-full aspect-video" src="https://www.youtube.com/embed/${youtubeId[1]}" frameborder="0" allowfullscreen></iframe>
+                            <button class="play-bg-btn retro-btn secondary mt-2 text-xs">Play in Background</button>
+                        </div>
+                    `;
+                }
+                
+                el.innerHTML = `${contentHTML} <button data-index="${index}" class="remove-attachment-btn text-red-500 text-xs retro-btn">REMOVE</button>`;
+                container.appendChild(el);
+            });
+        };
+        
+        modalContainer.addEventListener('click', (e) => {
+            if(e.target.closest('.remove-attachment-btn')) {
+                e.target.closest('.flex').remove();
+            }
+            if(e.target.closest('.play-bg-btn')) {
+                const url = e.target.closest('[data-url]').dataset.url;
+                const youtubeId = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                if(youtubeId) {
+                    videoBackground.innerHTML = `<iframe src="https://www.youtube.com/embed/${youtubeId[1]}?autoplay=1&controls=0&loop=1&playlist=${youtubeId[1]}" frameborder="0"></iframe>`;
+                    videoBackground.classList.remove('hidden');
+                    closeVideoBgBtn.classList.remove('hidden');
+                    closeModal();
+                }
+            }
+        });
+
         const openBulkAddModal = (parentId) => {
             const parentTask = parentId ? allTasks.find(t => t.id === parentId) : null;
             const title = parentId ? 'BULK ADD TO SUBJECT' : 'BULK ADD NEW SUBJECTS';
@@ -626,9 +681,30 @@
         signOutBtn.addEventListener('click', () => signOut(auth));
         themeSwitcher.addEventListener('click', (e) => {
             const themeBtn = e.target.closest('.theme-switcher-btn');
-            if (themeBtn) { saveTheme(themeBtn.dataset.theme); }
+            if (themeBtn) { 
+                if (e.target.isContentEditable) return;
+                saveTheme(themeBtn.dataset.theme); 
+            }
         });
+        themeSwitcher.addEventListener('blur', (e) => {
+            const themeBtn = e.target.closest('.theme-switcher-btn');
+            if (themeBtn) {
+                saveThemeName(themeBtn.dataset.theme, themeBtn.textContent);
+            }
+        }, true);
+        themeSwitcher.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.target.blur();
+            }
+        });
+
         globalBulkAddBtn.addEventListener('click', () => openBulkAddModal(null));
+        closeVideoBgBtn.addEventListener('click', () => {
+            videoBackground.innerHTML = '';
+            videoBackground.classList.add('hidden');
+            closeVideoBgBtn.classList.add('hidden');
+        });
         
     </script>
 </body>
