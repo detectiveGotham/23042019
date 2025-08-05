@@ -15,70 +15,78 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5; /* A light grey background */
+            background-color: #f0f2f5;
         }
-        /* Simple transition for theme changes later */
         .theme-transition {
             transition: background-color 0.3s, color 0.3s, border-color 0.3s;
         }
-        /* Custom class for the drag handle */
-        .drag-handle {
-            cursor: grab;
-        }
-        .completed-task {
+        .completed-task > span {
             text-decoration: line-through;
             color: #9ca3af; /* gray-400 */
+        }
+        .flagged-task {
+            background-color: #fef9c3 !important; /* yellow-100 */
+        }
+        /* Hide scrollbar but allow scrolling */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Styles for the modal */
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+        .modal-content {
+            transition: transform 0.25s ease;
         }
     </style>
 </head>
 <body>
 
-    <!-- This view is shown if the user is not logged in -->
+    <!-- Logged Out View -->
     <div id="logged-out-view" class="hidden h-screen flex items-center justify-center">
         <div class="text-center bg-white p-12 rounded-xl shadow-lg">
             <h2 class="text-2xl font-bold mb-4">Access Denied</h2>
             <p class="text-gray-600 mb-6">Please log in to access your productivity hub.</p>
-            <a href="index.html" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">
-                Go to Login Page
-            </a>
+            <a href="index.html" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">Go to Login Page</a>
         </div>
     </div>
 
-    <!-- Main container, shown only when a user is logged in -->
+    <!-- Main Logged In View -->
     <div id="logged-in-view" class="hidden p-4 md:p-8">
         <header class="flex justify-between items-center mb-8">
             <h1 class="text-4xl font-extrabold text-gray-800">Productivity Hub</h1>
-            <button id="sign-out-btn" class="text-sm font-medium text-gray-600 hover:text-indigo-600 theme-transition">
-                Sign Out <i class="fas fa-sign-out-alt ml-1"></i>
-            </button>
+            <button id="sign-out-btn" class="text-sm font-medium text-gray-600 hover:text-indigo-600 theme-transition">Sign Out <i class="fas fa-sign-out-alt ml-1"></i></button>
         </header>
 
         <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
             <!-- Main Content: Checklist -->
             <div class="lg:col-span-2 space-y-6">
-                <!-- Add Task Card -->
+                <!-- Bulk Add Card -->
                 <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
-                    <h2 class="text-xl font-bold mb-4">Add New Task</h2>
-                    <form id="add-task-form" class="flex gap-4">
-                        <input type="text" id="task-input" class="flex-grow p-3 border border-gray-300 rounded-lg" placeholder="Enter a new task..." required>
-                        <button type="submit" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700">Add</button>
+                    <h2 class="text-xl font-bold mb-4">Bulk Add Subjects</h2>
+                    <form id="bulk-add-form">
+                        <textarea id="bulk-task-input" class="w-full p-3 border border-gray-300 rounded-lg" rows="3" placeholder="Enter new subjects, one per line..."></textarea>
+                        <button type="submit" class="mt-3 w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700">Add Subjects</button>
                     </form>
                 </div>
 
                 <!-- Checklist Card -->
                 <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
                     <h2 class="text-xl font-bold mb-4">My Master Checklist</h2>
-                    <ul id="task-list" class="space-y-3">
-                        <!-- Tasks will be dynamically loaded here -->
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                        <div id="progress-bar" class="bg-green-500 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <div id="task-list-container" class="space-y-2 max-h-[60vh] overflow-y-auto no-scrollbar">
                         <p id="loading-placeholder" class="text-gray-500">Loading your tasks...</p>
-                    </ul>
+                    </div>
                 </div>
             </div>
 
             <!-- Sidebar: Widgets (Static Placeholders) -->
             <div class="space-y-6">
-                <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
+                <!-- Static widgets remain the same -->
+                 <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
                     <h2 class="text-xl font-bold mb-4">Focus Mode</h2>
                     <div class="text-center"><p class="text-5xl font-mono font-bold text-gray-800">24:15</p><p class="text-sm text-gray-500">Stopwatch Session</p></div>
                     <div class="mt-6 text-center"><h3 class="font-bold mb-2">Achievements</h3><div class="flex justify-center gap-4 text-2xl"><i class="fas fa-star text-yellow-400"></i><i class="fas fa-check-double text-green-500"></i><i class="fas fa-brain text-blue-500"></i></div></div>
@@ -96,12 +104,37 @@
             </div>
         </main>
     </div>
+    
+    <!-- Notes & Attachments Modal -->
+    <div id="notes-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-lg p-6 transform -translate-y-10">
+            <h3 class="text-xl font-bold mb-4">Edit Details</h3>
+            <input type="hidden" id="modal-task-id">
+            <div>
+                <label for="modal-notes" class="block text-sm font-medium text-gray-700">Notes</label>
+                <textarea id="modal-notes" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
+            </div>
+            <div class="mt-4">
+                <label for="modal-attachments" class="block text-sm font-medium text-gray-700">Attachments (Links)</label>
+                <div id="modal-attachments-list" class="space-y-2 mt-2"></div>
+                <div class="flex gap-2 mt-2">
+                    <input type="url" id="new-attachment-input" placeholder="https://example.com" class="flex-grow rounded-md border-gray-300 shadow-sm">
+                    <button id="add-attachment-btn" class="px-3 py-1 bg-gray-200 rounded-md">Add</button>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 rounded-lg">Cancel</button>
+                <button id="modal-save-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Save</button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, doc, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCKcC_TPxyP9-ErqUTZHWc4Il8llwpwUg8",
@@ -113,7 +146,6 @@
             measurementId: "G-FHF15XRWC3"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -122,118 +154,263 @@
         const loggedInView = document.getElementById('logged-in-view');
         const loggedOutView = document.getElementById('logged-out-view');
         const signOutBtn = document.getElementById('sign-out-btn');
-        const addTaskForm = document.getElementById('add-task-form');
-        const taskInput = document.getElementById('task-input');
-        const taskList = document.getElementById('task-list');
-        const loadingPlaceholder = document.getElementById('loading-placeholder');
+        const bulkAddForm = document.getElementById('bulk-add-form');
+        const bulkTaskInput = document.getElementById('bulk-task-input');
+        const taskListContainer = document.getElementById('task-list-container');
+        const progressBar = document.getElementById('progress-bar');
+        
+        // Modal Elements
+        const notesModal = document.getElementById('notes-modal');
+        const modalTaskId = document.getElementById('modal-task-id');
+        const modalNotes = document.getElementById('modal-notes');
+        const modalAttachmentsList = document.getElementById('modal-attachments-list');
+        const newAttachmentInput = document.getElementById('new-attachment-input');
+        const addAttachmentBtn = document.getElementById('add-attachment-btn');
+        const modalSaveBtn = document.getElementById('modal-save-btn');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
 
-        let tasksUnsubscribe = null; // To stop listening for tasks when logged out
 
-        // --- Authentication state listener ---
+        let tasksUnsubscribe = null;
+        let allTasks = []; // Local cache of all tasks
+
+        // --- Auth State ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                console.log("User is logged in:", user.uid);
                 loggedInView.classList.remove('hidden');
                 loggedOutView.classList.add('hidden');
-                // Start fetching tasks for the logged-in user
                 getTasks(user.uid);
             } else {
-                console.log("User is logged out.");
                 loggedInView.classList.add('hidden');
                 loggedOutView.classList.remove('hidden');
-                // Stop listening to task changes if the function exists
-                if (tasksUnsubscribe) {
-                    tasksUnsubscribe();
-                }
+                if (tasksUnsubscribe) tasksUnsubscribe();
             }
         });
 
-        // --- Firestore Functions ---
+        // --- Data Handling & Rendering ---
 
-        // Get all tasks for a user and listen for real-time updates
+        // Fetch tasks and build the nested structure
         const getTasks = (userId) => {
             const tasksCollectionRef = collection(db, 'users', userId, 'tasks');
-            const q = query(tasksCollectionRef); // We can add ordering here later, e.g., orderBy('createdAt')
+            const q = query(tasksCollectionRef);
 
             tasksUnsubscribe = onSnapshot(q, (snapshot) => {
-                // Clear the list every time there's an update
-                taskList.innerHTML = '';
-                if (snapshot.empty) {
-                    taskList.innerHTML = '<p class="text-gray-500">No tasks yet. Add one above!</p>';
+                allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const taskTree = buildTree(allTasks);
+                renderTaskTree(taskTree);
+                updateProgressBar();
+            });
+        };
+
+        // Helper to build a tree from a flat array of tasks
+        const buildTree = (tasks) => {
+            const map = {};
+            const roots = [];
+            tasks.forEach(task => {
+                map[task.id] = { ...task, children: [] };
+            });
+            tasks.forEach(task => {
+                if (task.parentId) {
+                    map[task.parentId]?.children.push(map[task.id]);
                 } else {
-                    snapshot.docs.forEach(doc => {
-                        renderTask(doc.id, doc.data());
-                    });
+                    roots.push(map[task.id]);
                 }
             });
+            return roots;
         };
 
-        // Render a single task item in the list
-        const renderTask = (id, taskData) => {
-            const li = document.createElement('li');
-            li.setAttribute('data-id', id);
-            li.className = 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg';
+        // Main function to kick off rendering
+        const renderTaskTree = (taskTree) => {
+            taskListContainer.innerHTML = '';
+            if (taskTree.length === 0) {
+                taskListContainer.innerHTML = '<p class="text-gray-500">No tasks yet. Add a subject above!</p>';
+                return;
+            }
+            taskTree.forEach(taskNode => renderTask(taskNode, 0));
+        };
 
-            // Add completed class if necessary
-            const taskTextClasses = taskData.completed ? 'flex-grow font-medium completed-task' : 'flex-grow font-medium';
-            const checkedAttribute = taskData.completed ? 'checked' : '';
+        // Recursive function to render a task and its children
+        const renderTask = (taskNode, level) => {
+            const taskEl = document.createElement('div');
+            taskEl.setAttribute('data-id', taskNode.id);
+            taskEl.className = `task-item group p-2 rounded-lg flex items-center gap-2 ${taskNode.isFlagged ? 'flagged-task' : 'bg-gray-50'}`;
+            taskEl.style.marginLeft = `${level * 2}rem`;
 
-            li.innerHTML = `
-                <i class="fas fa-grip-vertical drag-handle text-gray-400"></i>
-                <input type="checkbox" class="task-checkbox h-5 w-5 rounded text-indigo-600" ${checkedAttribute}>
-                <span class="${taskTextClasses}">${taskData.text}</span>
-                <button class="delete-btn text-gray-400 hover:text-red-500"><i class="fas fa-trash"></i></button>
-            `;
+            const checkedAttr = taskNode.completed ? 'checked' : '';
+            const completedClass = taskNode.completed ? 'completed-task' : '';
+            const flagClass = taskNode.isFlagged ? 'text-yellow-500' : 'text-gray-400';
             
-            // Add event listeners for checkbox and delete button
-            li.querySelector('.task-checkbox').addEventListener('change', (e) => {
-                toggleTaskComplete(id, e.target.checked);
-            });
-            li.querySelector('.delete-btn').addEventListener('click', () => {
-                deleteTask(id);
-            });
+            taskEl.innerHTML = `
+                <input type="checkbox" class="task-checkbox h-5 w-5 rounded text-indigo-600 flex-shrink-0" ${checkedAttr}>
+                <span class="flex-grow font-medium text-gray-800 ${completedClass}" contenteditable="true" spellcheck="false">${taskNode.text}</span>
+                <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button title="Add Sub-task" class="add-subtask-btn text-gray-400 hover:text-green-500"><i class="fas fa-plus-circle"></i></button>
+                    <button title="Flag" class="flag-btn ${flagClass} hover:text-yellow-500"><i class="far fa-flag"></i></button>
+                    <button title="Notes & Attachments" class="notes-btn text-gray-400 hover:text-blue-500"><i class="far fa-sticky-note"></i></button>
+                    <button title="Delete" class="delete-btn text-gray-400 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
 
-            taskList.appendChild(li);
+            taskListContainer.appendChild(taskEl);
+
+            // Add event listeners for this task
+            const span = taskEl.querySelector('span');
+            span.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    span.blur();
+                }
+            });
+            span.addEventListener('blur', () => updateTaskText(taskNode.id, span.textContent));
+
+            taskEl.querySelector('.task-checkbox').addEventListener('change', (e) => toggleTaskComplete(taskNode.id, e.target.checked));
+            taskEl.querySelector('.add-subtask-btn').addEventListener('click', () => addTask(null, taskNode.id));
+            taskEl.querySelector('.flag-btn').addEventListener('click', () => toggleFlag(taskNode.id, !taskNode.isFlagged));
+            taskEl.querySelector('.notes-btn').addEventListener('click', () => openNotesModal(taskNode.id));
+            taskEl.querySelector('.delete-btn').addEventListener('click', () => deleteTaskWithChildren(taskNode.id));
+
+
+            // Recursively render children
+            if (taskNode.children && taskNode.children.length > 0) {
+                taskNode.children.forEach(childNode => renderTask(childNode, level + 1));
+            }
+        };
+        
+        const updateProgressBar = () => {
+            const totalTasks = allTasks.length;
+            if (totalTasks === 0) {
+                progressBar.style.width = '0%';
+                return;
+            }
+            const completedTasks = allTasks.filter(t => t.completed).length;
+            const percentage = (completedTasks / totalTasks) * 100;
+            progressBar.style.width = `${percentage}%`;
         };
 
-        // Add a new task to the database
-        addTaskForm.addEventListener('submit', (e) => {
+        // --- Firestore Actions ---
+
+        // Generic function to add a task
+        const addTask = (text, parentId = null) => {
+            const user = auth.currentUser;
+            if (!user) return;
+            addDoc(collection(db, 'users', user.uid, 'tasks'), {
+                text: text || 'New Task',
+                parentId: parentId,
+                completed: false,
+                isFlagged: false,
+                notes: '',
+                attachments: [],
+                createdAt: new Date()
+            });
+        };
+
+        // Bulk add from textarea
+        bulkAddForm.addEventListener('submit', (e) => {
             e.preventDefault();
+            const lines = bulkTaskInput.value.split('\n').filter(line => line.trim() !== '');
+            if (lines.length === 0) return;
+
             const user = auth.currentUser;
-            if (user && taskInput.value.trim() !== '') {
-                addDoc(collection(db, 'users', user.uid, 'tasks'), {
-                    text: taskInput.value,
+            if (!user) return;
+
+            const batch = writeBatch(db);
+            const tasksCollectionRef = collection(db, 'users', user.uid, 'tasks');
+            lines.forEach(line => {
+                const newDocRef = doc(tasksCollectionRef);
+                batch.set(newDocRef, {
+                    text: line,
+                    parentId: null,
                     completed: false,
-                    createdAt: serverTimestamp() // Adds a server-side timestamp
+                    isFlagged: false,
+                    notes: '',
+                    attachments: [],
+                    createdAt: new Date()
                 });
-                taskInput.value = ''; // Clear input field
-            }
-        });
-
-        // Toggle a task's 'completed' status
-        const toggleTaskComplete = (id, isCompleted) => {
-            const user = auth.currentUser;
-            if (user) {
-                const taskDocRef = doc(db, 'users', user.uid, 'tasks', id);
-                updateDoc(taskDocRef, { completed: isCompleted });
-            }
-        };
-
-        // Delete a task from the database
-        const deleteTask = (id) => {
-            const user = auth.currentUser;
-            if (user) {
-                const taskDocRef = doc(db, 'users', user.uid, 'tasks', id);
-                deleteDoc(taskDocRef);
-            }
-        };
-
-        // Sign out button functionality
-        signOutBtn.addEventListener('click', () => {
-            signOut(auth).catch((error) => {
-                console.error('Sign Out Error', error);
             });
+            batch.commit();
+            bulkTaskInput.value = '';
         });
+        
+        const updateTaskText = (id, text) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { text });
+        const toggleTaskComplete = (id, completed) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { completed });
+        const toggleFlag = (id, isFlagged) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { isFlagged });
+
+        // Delete a task and all its descendants
+        const deleteTaskWithChildren = (taskId) => {
+            const user = auth.currentUser;
+            if (!user) return;
+            
+            const childrenIds = getDescendantIds(taskId);
+            const idsToDelete = [taskId, ...childrenIds];
+
+            const batch = writeBatch(db);
+            idsToDelete.forEach(id => {
+                const docRef = doc(db, 'users', user.uid, 'tasks', id);
+                batch.delete(docRef);
+            });
+            batch.commit();
+        };
+
+        const getDescendantIds = (parentId) => {
+            let descendants = [];
+            const children = allTasks.filter(task => task.parentId === parentId);
+            children.forEach(child => {
+                descendants.push(child.id);
+                descendants = descendants.concat(getDescendantIds(child.id));
+            });
+            return descendants;
+        };
+
+        // --- Modal Logic ---
+        const openNotesModal = (id) => {
+            const task = allTasks.find(t => t.id === id);
+            if (!task) return;
+            modalTaskId.value = id;
+            modalNotes.value = task.notes || '';
+            renderAttachments(task.attachments || []);
+            notesModal.classList.remove('hidden');
+        };
+
+        const closeNotesModal = () => notesModal.classList.add('hidden');
+        
+        const renderAttachments = (attachments) => {
+            modalAttachmentsList.innerHTML = '';
+            attachments.forEach((att, index) => {
+                const el = document.createElement('div');
+                el.className = 'flex items-center gap-2 bg-gray-100 p-1 rounded';
+                el.innerHTML = `<a href="${att.url}" target="_blank" class="text-blue-600 truncate flex-grow">${att.url}</a> <button data-index="${index}" class="remove-attachment-btn text-red-500 text-xs">Remove</button>`;
+                modalAttachmentsList.appendChild(el);
+            });
+        };
+        
+        addAttachmentBtn.addEventListener('click', () => {
+            if (newAttachmentInput.value.trim() === '') return;
+            const currentAttachments = Array.from(modalAttachmentsList.querySelectorAll('a')).map(a => ({ url: a.href }));
+            currentAttachments.push({ url: newAttachmentInput.value });
+            renderAttachments(currentAttachments);
+            newAttachmentInput.value = '';
+        });
+
+        modalAttachmentsList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-attachment-btn')) {
+                const indexToRemove = parseInt(e.target.dataset.index);
+                const currentAttachments = Array.from(modalAttachmentsList.querySelectorAll('a')).map(a => ({ url: a.href }));
+                const newAttachments = currentAttachments.filter((_, index) => index !== indexToRemove);
+                renderAttachments(newAttachments);
+            }
+        });
+
+        modalSaveBtn.addEventListener('click', () => {
+            const id = modalTaskId.value;
+            const notes = modalNotes.value;
+            const attachments = Array.from(modalAttachmentsList.querySelectorAll('a')).map(a => ({ url: a.href }));
+            updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { notes, attachments });
+            closeNotesModal();
+        });
+
+        modalCancelBtn.addEventListener('click', closeNotesModal);
+
+        // --- General Event Listeners ---
+        signOutBtn.addEventListener('click', () => signOut(auth));
 
     </script>
 </body>
