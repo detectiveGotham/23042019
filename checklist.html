@@ -47,6 +47,14 @@
         .collapsed .collapse-icon {
             transform: rotate(-90deg);
         }
+        /* Timer flash animation */
+        @keyframes flash {
+            0%, 100% { color: red; }
+            50% { color: inherit; }
+        }
+        .timer-flash {
+            animation: flash 1s 3;
+        }
     </style>
 </head>
 <body>
@@ -78,9 +86,12 @@
             <div class="lg:col-span-2 space-y-6">
                 <!-- Checklist Card -->
                 <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
-                    <h2 class="text-xl font-bold mb-4">My Master Checklist</h2>
+                    <div class="flex justify-between items-center mb-4">
+                         <h2 class="text-xl font-bold">My Master Checklist</h2>
+                         <span id="progress-text" class="text-sm font-semibold text-gray-600">0% Complete</span>
+                    </div>
                     <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
-                        <div id="progress-bar" class="bg-green-500 h-2.5 rounded-full" style="width: 0%"></div>
+                        <div id="progress-bar" class="bg-green-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
                     </div>
                     <div id="task-list-container" class="space-y-1 max-h-[60vh] overflow-y-auto no-scrollbar">
                         <p id="loading-placeholder" class="text-gray-500">Loading your tasks...</p>
@@ -169,6 +180,7 @@
         const bulkTaskInput = document.getElementById('bulk-task-input');
         const taskListContainer = document.getElementById('task-list-container');
         const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
         
         // Timer Elements
         const timerDisplay = document.getElementById('timer-display');
@@ -205,7 +217,7 @@
                 loggedInView.classList.add('hidden');
                 loggedOutView.classList.remove('hidden');
                 if (tasksUnsubscribe) tasksUnsubscribe();
-                clearInterval(timerInterval); // Stop timer on logout
+                clearInterval(timerInterval);
             }
         });
 
@@ -243,10 +255,10 @@
             const isMaxDepth = level >= HIERARCHY.length - 1;
 
             const checkboxIcons = [
-                { unchecked: 'fa-regular fa-square', checked: 'fa-solid fa-square-check' }, // Subject
-                { unchecked: 'fa-regular fa-circle', checked: 'fa-solid fa-circle-check' }, // Section
-                { unchecked: 'fa-solid fa-diamond', checked: 'fa-solid fa-check-to-slot' }, // Chapter
-                { unchecked: 'fa-regular fa-square-check', checked: 'fa-solid fa-square-check text-green-500' } // Topic
+                { unchecked: 'fa-regular fa-square', checked: 'fa-solid fa-square-check text-green-500' },
+                { unchecked: 'fa-regular fa-circle', checked: 'fa-solid fa-circle-check text-green-500' },
+                { unchecked: 'fa-solid fa-diamond', checked: 'fa-solid fa-check-to-slot text-green-500' },
+                { unchecked: 'fa-regular fa-square', checked: 'fa-solid fa-square-check text-green-500' }
             ];
             const iconSet = checkboxIcons[level];
             const checkboxIconClass = taskNode.completed ? iconSet.checked : iconSet.unchecked;
@@ -267,18 +279,16 @@
             `;
             taskListContainer.appendChild(taskEl);
 
-            // --- Add Event Listeners ---
             const span = taskEl.querySelector('span');
             span.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); span.blur(); } });
             span.addEventListener('blur', () => updateTaskText(taskNode.id, span.textContent));
             taskEl.querySelector('.collapse-icon').addEventListener('click', () => toggleCollapse(taskNode.id, !taskNode.isCollapsed));
-            taskEl.querySelector('.checkbox-icon').addEventListener('click', () => toggleTaskComplete(taskNode.id, !taskNode.completed));
+            taskEl.querySelector('.checkbox-icon').addEventListener('click', () => toggleTaskCompleteWithChildren(taskNode.id, !taskNode.completed));
             taskEl.querySelector('.add-subtask-btn').addEventListener('click', () => addTask(HIERARCHY[level + 1], taskNode.id, level + 1));
             taskEl.querySelector('.flag-btn').addEventListener('click', () => toggleFlag(taskNode.id, !taskNode.isFlagged));
             taskEl.querySelector('.notes-btn').addEventListener('click', () => openNotesModal(taskNode.id));
             taskEl.querySelector('.delete-btn').addEventListener('click', () => deleteTaskWithChildren(taskNode.id));
 
-            // --- Render Children ---
             if (hasChildren && !taskNode.isCollapsed) {
                 const childrenContainer = taskEl.querySelector('.children-container');
                 taskNode.children.forEach(childNode => {
@@ -286,13 +296,19 @@
                     childrenContainer.appendChild(childEl);
                 });
             }
-            return taskEl; // Return element for recursive appending
+            return taskEl;
         };
         
         const updateProgressBar = () => {
-            if (allTasks.length === 0) { progressBar.style.width = '0%'; return; }
+            if (allTasks.length === 0) {
+                progressBar.style.width = '0%';
+                progressText.textContent = '0% Complete';
+                return;
+            }
             const completedTasks = allTasks.filter(t => t.completed).length;
-            progressBar.style.width = `${(completedTasks / allTasks.length) * 100}%`;
+            const percentage = Math.round((completedTasks / allTasks.length) * 100);
+            progressBar.style.width = `${percentage}%`;
+            progressText.textContent = `${percentage}% Complete`;
         };
 
         // --- Firestore Actions ---
@@ -320,22 +336,33 @@
         });
         
         const updateTaskText = (id, text) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { text });
-        const toggleTaskComplete = (id, completed) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { completed });
         const toggleFlag = (id, isFlagged) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { isFlagged });
         const toggleCollapse = (id, isCollapsed) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { isCollapsed });
+
+        const getDescendantIds = (parentId, tasks) => {
+            let descendants = [];
+            const children = tasks.filter(task => task.parentId === parentId);
+            children.forEach(child => {
+                descendants.push(child.id);
+                descendants = descendants.concat(getDescendantIds(child.id, tasks));
+            });
+            return descendants;
+        };
+        
+        const toggleTaskCompleteWithChildren = (taskId, isCompleted) => {
+            const user = auth.currentUser;
+            if (!user) return;
+            const idsToUpdate = [taskId, ...getDescendantIds(taskId, allTasks)];
+            const batch = writeBatch(db);
+            idsToUpdate.forEach(id => {
+                batch.update(doc(db, 'users', user.uid, 'tasks', id), { completed: isCompleted });
+            });
+            batch.commit();
+        };
 
         const deleteTaskWithChildren = (taskId) => {
             const user = auth.currentUser;
             if (!user) return;
-            const getDescendantIds = (parentId, tasks) => {
-                let descendants = [];
-                const children = tasks.filter(task => task.parentId === parentId);
-                children.forEach(child => {
-                    descendants.push(child.id);
-                    descendants = descendants.concat(getDescendantIds(child.id, tasks));
-                });
-                return descendants;
-            };
             const idsToDelete = [taskId, ...getDescendantIds(taskId, allTasks)];
             const batch = writeBatch(db);
             idsToDelete.forEach(id => batch.delete(doc(db, 'users', user.uid, 'tasks', id)));
@@ -345,24 +372,24 @@
         // --- Search Logic ---
         searchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
-            if (!searchTerm) {
-                renderTaskTree(buildTree(allTasks)); // Re-render full tree
-                return;
-            }
-            const matchingIds = new Set();
             const taskMap = new Map(allTasks.map(task => [task.id, task]));
+            let matchingIds = new Set();
 
-            allTasks.forEach(task => {
-                if (task.text.toLowerCase().includes(searchTerm)) {
-                    let current = task;
-                    while(current) {
-                        matchingIds.add(current.id);
-                        current = current.parentId ? taskMap.get(current.parentId) : null;
+            if (searchTerm) {
+                allTasks.forEach(task => {
+                    if (task.text.toLowerCase().includes(searchTerm)) {
+                        let current = task;
+                        while(current) {
+                            matchingIds.add(current.id);
+                            current = current.parentId ? taskMap.get(current.parentId) : null;
+                        }
                     }
-                }
-            });
-            const filteredTasks = allTasks.filter(task => matchingIds.has(task.id));
-            renderTaskTree(buildTree(filteredTasks));
+                });
+                const filteredTasks = allTasks.filter(task => matchingIds.has(task.id));
+                renderTaskTree(buildTree(filteredTasks));
+            } else {
+                renderTaskTree(buildTree(allTasks));
+            }
         });
 
         // --- Timer Logic ---
@@ -373,12 +400,13 @@
         };
 
         const startPauseTimer = () => {
-            if (isTimerRunning) { // Pause
+            if (timerSeconds <= 0) return;
+            if (isTimerRunning) {
                 clearInterval(timerInterval);
                 isTimerRunning = false;
                 startPauseBtn.textContent = 'Resume';
                 startPauseBtn.classList.replace('bg-yellow-500', 'bg-green-500');
-            } else { // Start or Resume
+            } else {
                 isTimerRunning = true;
                 startPauseBtn.textContent = 'Pause';
                 startPauseBtn.classList.replace('bg-green-500', 'bg-yellow-500');
@@ -387,7 +415,8 @@
                     updateTimerDisplay();
                     if (timerSeconds <= 0) {
                         clearInterval(timerInterval);
-                        alert("Time's up!");
+                        timerDisplay.classList.add('timer-flash');
+                        setTimeout(() => timerDisplay.classList.remove('timer-flash'), 3000);
                         resetTimer();
                     }
                 }, 1000);
@@ -414,7 +443,6 @@
         });
         startPauseBtn.addEventListener('click', startPauseTimer);
         resetBtn.addEventListener('click', resetTimer);
-
 
         // --- Modal Logic ---
         const openNotesModal = (id) => {
