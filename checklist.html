@@ -349,14 +349,38 @@
             return descendants;
         };
         
+        // --- NEW: Smart Completion Logic ---
         const toggleTaskCompleteWithChildren = (taskId, isCompleted) => {
             const user = auth.currentUser;
             if (!user) return;
-            const idsToUpdate = [taskId, ...getDescendantIds(taskId, allTasks)];
+            
             const batch = writeBatch(db);
+            const taskMap = new Map(allTasks.map(task => [task.id, task]));
+
+            // 1. Update the clicked task and all its descendants
+            const idsToUpdate = [taskId, ...getDescendantIds(taskId, allTasks)];
             idsToUpdate.forEach(id => {
                 batch.update(doc(db, 'users', user.uid, 'tasks', id), { completed: isCompleted });
             });
+
+            // 2. Update all ancestors (bottom-up)
+            let currentTask = taskMap.get(taskId);
+            let parentId = currentTask ? currentTask.parentId : null;
+            while (parentId) {
+                const parent = taskMap.get(parentId);
+                const siblings = allTasks.filter(t => t.parentId === parentId);
+                
+                // If unchecking, parent must be unchecked.
+                // If checking, check if all siblings are now complete.
+                const allSiblingsComplete = siblings.every(s => {
+                    return idsToUpdate.includes(s.id) ? isCompleted : s.completed;
+                });
+                
+                batch.update(doc(db, 'users', user.uid, 'tasks', parentId), { completed: allSiblingsComplete });
+
+                parentId = parent.parentId; // Move up the tree
+            }
+            
             batch.commit();
         };
 
@@ -400,7 +424,7 @@
         };
 
         const startPauseTimer = () => {
-            if (timerSeconds <= 0) return;
+            if (timerSeconds <= 0 && !isTimerRunning) return; // Don't start a 00:00 timer
             if (isTimerRunning) {
                 clearInterval(timerInterval);
                 isTimerRunning = false;
