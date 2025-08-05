@@ -53,6 +53,10 @@
         .timer-flash {
             animation: flash 1s 3;
         }
+        .calendar-day.today {
+            background-color: #fef08a; /* yellow-200 */
+            border-radius: 50%;
+        }
     </style>
 </head>
 <body>
@@ -112,10 +116,14 @@
                     <div class="flex items-center gap-2 mt-4"><input type="number" id="minutes-input" placeholder="Mins" min="0" class="w-full p-2 border rounded-lg text-center"><button id="set-time-btn" class="px-4 py-2 bg-gray-200 rounded-lg">Set</button></div>
                     <div class="flex justify-center gap-2 mt-4"><button id="start-pause-btn" class="px-4 py-2 bg-green-500 text-white rounded-lg w-24">Start</button><button id="reset-btn" class="px-4 py-2 bg-gray-500 text-white rounded-lg">Reset</button></div>
                 </div>
-                <!-- Calendar Heatmap -->
+                <!-- Calendar -->
                 <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
-                    <h2 class="text-xl font-bold mb-4">Productivity Calendar</h2>
-                    <div id="calendar-heatmap" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+                    <div class="flex justify-between items-center mb-4">
+                        <button id="prev-month-btn" class="p-2 rounded-full hover:bg-gray-200"><i class="fas fa-chevron-left"></i></button>
+                        <h2 id="calendar-header" class="text-xl font-bold"></h2>
+                        <button id="next-month-btn" class="p-2 rounded-full hover:bg-gray-200"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-sm"></div>
                 </div>
                 <!-- Theme Selector -->
                 <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
@@ -140,8 +148,8 @@
         <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-lg p-6 transform -translate-y-10">
             <h3 class="text-xl font-bold mb-4">Bulk Add to Subject</h3>
             <input type="hidden" id="bulk-add-parent-id">
-            <p class="text-sm text-gray-600 mb-2">Use indentation (spaces or tabs) to create hierarchy.</p>
-            <textarea id="bulk-add-textarea" rows="8" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm font-mono"></textarea>
+            <p class="text-sm text-gray-600 mb-2">Use indentation (2 spaces) for hierarchy.</p>
+            <textarea id="bulk-add-textarea" rows="8" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm font-mono" placeholder="Section Name&#10;  Chapter Name&#10;    Topic Name&#10;Another Section"></textarea>
             <div class="mt-6 flex justify-end gap-3"><button id="bulk-add-cancel-btn" class="px-4 py-2 bg-gray-200 rounded-lg">Cancel</button><button id="bulk-add-save-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Add Items</button></div>
         </div>
     </div>
@@ -176,7 +184,12 @@
         const taskListContainer = document.getElementById('task-list-container');
         const progressBar = document.getElementById('progress-bar');
         const progressText = document.getElementById('progress-text');
-        const calendarHeatmap = document.getElementById('calendar-heatmap');
+        
+        // Calendar Elements
+        const calendarGrid = document.getElementById('calendar-grid');
+        const calendarHeader = document.getElementById('calendar-header');
+        const prevMonthBtn = document.getElementById('prev-month-btn');
+        const nextMonthBtn = document.getElementById('next-month-btn');
         
         // Timer Elements
         const timerDisplay = document.getElementById('timer-display');
@@ -204,6 +217,7 @@
         let tasksUnsubscribe = null;
         let allTasks = [];
         const HIERARCHY = ['Subject', 'Section', 'Chapter', 'Topic'];
+        let currentCalendarDate = new Date();
 
         let timerInterval = null;
         let timerSeconds = 0;
@@ -266,11 +280,10 @@
             const iconSet = checkboxIcons[level];
             const checkboxIconClass = taskNode.completed ? iconSet.checked : iconSet.unchecked;
             
-            // --- Subject-specific progress bar ---
             let subjectProgressBarHTML = '';
             if (level === 0) {
                 const descendantIds = getDescendantIds(taskNode.id, allTasks);
-                const relevantTasks = [taskNode, ...allTasks.filter(t => descendantIds.includes(t.id))];
+                const relevantTasks = allTasks.filter(t => descendantIds.includes(t.id));
                 const completedCount = relevantTasks.filter(t => t.completed).length;
                 const subjectProgress = relevantTasks.length > 0 ? (completedCount / relevantTasks.length) * 100 : 0;
                 subjectProgressBarHTML = `
@@ -328,7 +341,8 @@
             const completedSubjects = subjects.filter(s => {
                 const descendantIds = getDescendantIds(s.id, allTasks);
                 if (descendantIds.length === 0) return s.completed;
-                return descendantIds.every(id => allTasks.find(t => t.id === id)?.completed);
+                const descendants = allTasks.filter(t => descendantIds.includes(t.id));
+                return descendants.length > 0 && descendants.every(d => d.completed);
             }).length;
             const percentage = Math.round((completedSubjects / subjects.length) * 100);
             progressBar.style.width = `${percentage}%`;
@@ -350,7 +364,7 @@
             const user = auth.currentUser;
             if (!user) return;
             addDoc(collection(db, 'users', user.uid, 'tasks'), {
-                text: `New ${text}`, parentId, level, completed: false, isFlagged: false, isCollapsed: false, notes: '', attachments: [], createdAt: serverTimestamp()
+                text, parentId, level, completed: false, isFlagged: false, isCollapsed: false, notes: '', attachments: [], createdAt: serverTimestamp()
             });
         };
 
@@ -397,24 +411,24 @@
 
         // --- Search Logic ---
         searchInput.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
+            const searchTerm = e.target.value.trim().toLowerCase();
             const taskMap = new Map(allTasks.map(task => [task.id, task]));
-            let matchingIds = new Set();
-            if (searchTerm) {
-                allTasks.forEach(task => {
-                    if (task.text.toLowerCase().includes(searchTerm)) {
-                        let current = task;
-                        while(current) {
-                            matchingIds.add(current.id);
-                            current = current.parentId ? taskMap.get(current.parentId) : null;
-                        }
-                    }
-                });
-                const filteredTasks = allTasks.filter(task => matchingIds.has(task.id));
-                renderTaskTree(buildTree(filteredTasks));
-            } else {
+            if (!searchTerm) {
                 renderTaskTree(buildTree(allTasks));
+                return;
             }
+            const matchingIds = new Set();
+            allTasks.forEach(task => {
+                if (task.text.toLowerCase().includes(searchTerm)) {
+                    let current = task;
+                    while (current) {
+                        matchingIds.add(current.id);
+                        current = current.parentId ? taskMap.get(current.parentId) : null;
+                    }
+                }
+            });
+            const filteredTasks = allTasks.filter(task => matchingIds.has(task.id));
+            renderTaskTree(buildTree(filteredTasks));
         });
 
         // --- Timer Logic ---
@@ -466,9 +480,15 @@
         startPauseBtn.addEventListener('click', startPauseTimer);
         resetBtn.addEventListener('click', resetTimer);
 
-        // --- Calendar Heatmap Logic ---
+        // --- Calendar Logic ---
         const renderCalendar = () => {
-            calendarHeatmap.innerHTML = '';
+            calendarGrid.innerHTML = '';
+            const month = currentCalendarDate.getMonth();
+            const year = currentCalendarDate.getFullYear();
+            calendarHeader.textContent = `${currentCalendarDate.toLocaleString('default', { month: 'long' })} ${year}`;
+
+            const firstDayOfMonth = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
             const completionsByDate = {};
             allTasks.forEach(task => {
                 if (task.completed && task.completedAt) {
@@ -477,30 +497,47 @@
                 }
             });
 
-            const today = new Date();
-            let date = new Date();
-            date.setFullYear(today.getFullYear() - 1);
-            
-            // Align to the first Sunday
-            date.setDate(date.getDate() - date.getDay());
+            const dayHeaders = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+            dayHeaders.forEach(day => {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'font-bold text-gray-500';
+                dayEl.textContent = day;
+                calendarGrid.appendChild(dayEl);
+            });
 
-            for (let i = 0; i < 7 * 53; i++) { // 53 weeks to ensure we cover the full year
-                const dateStr = date.toISOString().split('T')[0];
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                calendarGrid.appendChild(document.createElement('div'));
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayEl = document.createElement('div');
+                dayEl.textContent = day;
+                dayEl.className = 'p-1 rounded-md calendar-day';
+                
+                const dateStr = new Date(year, month, day).toISOString().split('T')[0];
+                const todayStr = new Date().toISOString().split('T')[0];
+                if(dateStr === todayStr) {
+                    dayEl.classList.add('today');
+                }
+
                 const count = completionsByDate[dateStr] || 0;
                 let level = 0;
-                if (count > 0) level = 1;
-                if (count > 2) level = 2;
-                if (count > 5) level = 3;
-                if (count > 8) level = 4;
-                
-                const dayEl = document.createElement('div');
-                dayEl.className = 'w-full h-4 rounded-sm';
-                dayEl.style.backgroundColor = `rgba(34, 197, 94, ${level * 0.25 || 0.1})`;
-                dayEl.title = `${count} tasks on ${date.toDateString()}`;
-                calendarHeatmap.appendChild(dayEl);
-                date.setDate(date.getDate() + 1);
+                if (count > 0) level = 1; if (count > 2) level = 2; if (count > 5) level = 3; if (count > 8) level = 4;
+                if (level > 0) {
+                    dayEl.style.backgroundColor = `rgba(34, 197, 94, ${level * 0.25})`;
+                }
+                dayEl.title = `${count} tasks on ${new Date(year, month, day).toDateString()}`;
+                calendarGrid.appendChild(dayEl);
             }
         };
+        prevMonthBtn.addEventListener('click', () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+            renderCalendar();
+        });
+        nextMonthBtn.addEventListener('click', () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+            renderCalendar();
+        });
 
         // --- Modal Logic ---
         const openNotesModal = (id) => {
@@ -562,11 +599,12 @@
 
             lines.forEach(line => {
                 const indentation = line.match(/^\s*/)[0].length;
-                const level = parentTask.level + 1 + Math.floor(indentation / 4); // Assuming 4 spaces per indent
+                const level = parentTask.level + 1 + Math.floor(indentation / 2); // 2 spaces per indent
                 const text = line.trim();
 
                 if (level < HIERARCHY.length) {
                     const currentParentId = lastParentIds[level - 1];
+                    if (!currentParentId) { console.error("Error finding parent for:", text); return; }
                     const newDocRef = doc(tasksRef);
                     batch.set(newDocRef, {
                         text, parentId: currentParentId, level, completed: false, isFlagged: false, isCollapsed: false, notes: '', attachments: [], createdAt: serverTimestamp()
