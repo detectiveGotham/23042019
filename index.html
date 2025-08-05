@@ -97,7 +97,8 @@
             } catch (error) {
                 // Handle Errors here.
                 console.error("Authentication Error:", error.code, error.message);
-                statusEl.textContent = "Error signing in. Please try again.";
+                // *** UPDATED CODE: Display the detailed error message on the page ***
+                statusEl.textContent = `Error: ${error.message}`;
             }
         };
 
