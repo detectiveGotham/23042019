@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Google Login</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+
+    <div id="auth-container" class="w-full max-w-sm p-8 space-y-6 bg-white rounded-xl shadow-lg text-center">
+        
+        <!-- App Title -->
+        <h1 class="text-3xl font-bold text-gray-800">Welcome</h1>
+        <p id="status" class="text-gray-600">Please sign in to continue.</p>
+
+        <!-- User Info - Hidden by default -->
+        <div id="user-info" class="hidden items-center flex-col space-y-4 pt-4">
+            <img id="user-photo" class="w-20 h-20 rounded-full" alt="User Photo">
+            <p id="user-name" class="text-xl font-semibold text-gray-900"></p>
+            <p id="user-email" class="text-sm text-gray-500"></p>
+        </div>
+
+        <!-- Login Button -->
+        <button id="login-btn" class="w-full flex items-center justify-center px-4 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105">
+            <svg class="w-6 h-6 mr-3" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#fff"></path><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"></path><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path><path d="M1 1h22v22H1z" fill="none"></path>
+            </svg>
+            Sign in with Google
+        </button>
+
+        <!-- Link Button - Hidden by default -->
+        <a id="link-btn" href="https://github.com" target="_blank" class="hidden w-full inline-block px-4 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-transform transform hover:scale-105">
+            Go to Website
+        </a>
+
+        <!-- Logout Button - Hidden by default -->
+        <button id="logout-btn" class="hidden w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            Sign Out
+        </button>
+
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // --- IMPORTANT ---
+        // Replace this with your web app's Firebase configuration.
+        // You can find this in your Firebase project settings.
+        const firebaseConfig = {
+            apiKey: "AIzaSyCKcC_TPxyP9-ErqUTZHWc4Il8llwpwUg8",
+            authDomain: "forge23-04-2019.firebaseapp.com",
+            projectId: "forge23-04-2019",
+            storageBucket: "forge23-04-2019.appspot.com", // Corrected storageBucket name
+            messagingSenderId: "725283917440",
+            appId: "1:725283917440:web:3627779e1de23153af2065",
+            measurementId: "G-FHF15XRWC3"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // Get references to the UI elements
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const linkBtn = document.getElementById('link-btn');
+        const statusEl = document.getElementById('status');
+        const userInfoDiv = document.getElementById('user-info');
+        const userNameEl = document.getElementById('user-name');
+        const userEmailEl = document.getElementById('user-email');
+        const userPhotoEl = document.getElementById('user-photo');
+
+        // --- Functions ---
+
+        // Function to handle Google Sign-In
+        const performLogin = async () => {
+            try {
+                // The signInWithPopup function opens a pop-up window for Google authentication.
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                console.log("User signed in successfully:", user);
+            } catch (error) {
+                // Handle Errors here.
+                console.error("Authentication Error:", error.code, error.message);
+                statusEl.textContent = "Error signing in. Please try again.";
+            }
+        };
+
+        // Function to handle Sign-Out
+        const performLogout = async () => {
+            try {
+                await signOut(auth);
+                console.log("User signed out successfully");
+            } catch (error) {
+                console.error("Sign out error:", error);
+            }
+        };
+
+        // --- Event Listeners ---
+        loginBtn.addEventListener('click', performLogin);
+        logoutBtn.addEventListener('click', performLogout);
+
+        // --- Authentication State Observer ---
+        // This is the core of the functionality. It listens for changes in the user's login state.
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is signed in.
+                console.log("Auth state changed: User is logged in.", user);
+
+                // Update UI for logged-in state
+                statusEl.textContent = "You are signed in!";
+                userNameEl.textContent = user.displayName;
+                userEmailEl.textContent = user.email;
+                userPhotoEl.src = user.photoURL;
+                userPhotoEl.onerror = () => { userPhotoEl.src = `https://placehold.co/80x80/EBF4FF/7F9CF5?text=${user.displayName.charAt(0)}`; };
+
+
+                // Show/hide relevant elements
+                userInfoDiv.classList.remove('hidden');
+                userInfoDiv.classList.add('flex');
+                loginBtn.classList.add('hidden');
+                linkBtn.classList.remove('hidden');
+                logoutBtn.classList.remove('hidden');
+
+            } else {
+                // User is signed out.
+                console.log("Auth state changed: User is logged out.");
+                
+                // Update UI for logged-out state
+                statusEl.textContent = "Please sign in to continue.";
+
+                // Show/hide relevant elements
+                userInfoDiv.classList.add('hidden');
+                userInfoDiv.classList.remove('flex');
+                loginBtn.classList.remove('hidden');
+                linkBtn.classList.add('hidden');
+                logoutBtn.classList.add('hidden');
+            }
+        });
+
+    </script>
+
+</body>
+</html>
