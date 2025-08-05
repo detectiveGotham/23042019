@@ -32,7 +32,6 @@
         .modal { transition: opacity 0.25s ease; }
         .modal-content { transition: transform 0.25s ease; }
         
-        /* Custom checkbox icons */
         .checkbox-icon {
             font-family: "Font Awesome 6 Free";
             font-weight: 900;
@@ -47,7 +46,6 @@
         .collapsed .collapse-icon {
             transform: rotate(-90deg);
         }
-        /* Timer flash animation */
         @keyframes flash {
             0%, 100% { color: red; }
             50% { color: inherit; }
@@ -84,7 +82,6 @@
         <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Main Content: Checklist -->
             <div class="lg:col-span-2 space-y-6">
-                <!-- Checklist Card -->
                 <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
                     <div class="flex justify-between items-center mb-4">
                          <h2 class="text-xl font-bold">My Master Checklist</h2>
@@ -93,17 +90,15 @@
                     <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
                         <div id="progress-bar" class="bg-green-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
                     </div>
-                    <div id="task-list-container" class="space-y-1 max-h-[60vh] overflow-y-auto no-scrollbar">
+                    <div id="task-list-container" class="space-y-2 max-h-[60vh] overflow-y-auto no-scrollbar">
                         <p id="loading-placeholder" class="text-gray-500">Loading your tasks...</p>
                     </div>
                 </div>
-
-                <!-- Bulk Add Card (Moved to bottom) -->
                 <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
-                    <h2 class="text-xl font-bold mb-4">Bulk Add Subjects</h2>
-                    <form id="bulk-add-form">
-                        <textarea id="bulk-task-input" class="w-full p-3 border border-gray-300 rounded-lg" rows="3" placeholder="Enter new subjects, one per line..."></textarea>
-                        <button type="submit" class="mt-3 w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700">Add Subjects</button>
+                    <h2 class="text-xl font-bold mb-4">Add New Subject</h2>
+                    <form id="add-subject-form">
+                        <textarea id="subject-input" class="w-full p-3 border border-gray-300 rounded-lg" rows="1" placeholder="Enter a new subject..."></textarea>
+                        <button type="submit" class="mt-3 w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700">Add Subject</button>
                     </form>
                 </div>
             </div>
@@ -113,25 +108,16 @@
                 <!-- Timer Card -->
                 <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
                     <h2 class="text-xl font-bold mb-4">Focus Mode</h2>
-                    <div class="text-center">
-                        <p id="timer-display" class="text-5xl font-mono font-bold text-gray-800">00:00</p>
-                    </div>
-                    <div class="flex items-center gap-2 mt-4">
-                        <input type="number" id="minutes-input" placeholder="Mins" min="0" class="w-full p-2 border rounded-lg text-center">
-                        <button id="set-time-btn" class="px-4 py-2 bg-gray-200 rounded-lg">Set</button>
-                    </div>
-                    <div class="flex justify-center gap-2 mt-4">
-                        <button id="start-pause-btn" class="px-4 py-2 bg-green-500 text-white rounded-lg w-24">Start</button>
-                        <button id="reset-btn" class="px-4 py-2 bg-gray-500 text-white rounded-lg">Reset</button>
-                    </div>
+                    <div class="text-center"><p id="timer-display" class="text-5xl font-mono font-bold text-gray-800">00:00</p></div>
+                    <div class="flex items-center gap-2 mt-4"><input type="number" id="minutes-input" placeholder="Mins" min="0" class="w-full p-2 border rounded-lg text-center"><button id="set-time-btn" class="px-4 py-2 bg-gray-200 rounded-lg">Set</button></div>
+                    <div class="flex justify-center gap-2 mt-4"><button id="start-pause-btn" class="px-4 py-2 bg-green-500 text-white rounded-lg w-24">Start</button><button id="reset-btn" class="px-4 py-2 bg-gray-500 text-white rounded-lg">Reset</button></div>
                 </div>
-                <!-- Other static widgets -->
+                <!-- Calendar Heatmap -->
                 <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
                     <h2 class="text-xl font-bold mb-4">Productivity Calendar</h2>
-                    <div class="grid grid-cols-7 gap-1 text-center text-xs">
-                        <script>for(let i=0; i<35; i++) { const o = Math.random()*0.8+0.1; document.write(`<div class="w-full h-6 rounded bg-green-500" style="opacity:${o}"></div>`); }</script>
-                    </div>
+                    <div id="calendar-heatmap" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
                 </div>
+                <!-- Theme Selector -->
                 <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
                     <h2 class="text-xl font-bold mb-4">Select Theme</h2>
                     <div class="grid grid-cols-2 gap-4"><button class="p-4 border-2 border-indigo-500 rounded-lg">Classic</button><button class="p-4 border rounded-lg bg-gray-800 text-white">Batman</button><button class="p-4 border rounded-lg">Iron Man</button><button class="p-4 border rounded-lg">Wonder Woman</button></div>
@@ -140,7 +126,7 @@
         </main>
     </div>
     
-    <!-- Notes Modal -->
+    <!-- Modals -->
     <div id="notes-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
         <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-lg p-6 transform -translate-y-10">
             <h3 class="text-xl font-bold mb-4">Edit Details</h3>
@@ -150,12 +136,21 @@
             <div class="mt-6 flex justify-end gap-3"><button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 rounded-lg">Cancel</button><button id="modal-save-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Save</button></div>
         </div>
     </div>
+    <div id="bulk-add-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-lg p-6 transform -translate-y-10">
+            <h3 class="text-xl font-bold mb-4">Bulk Add to Subject</h3>
+            <input type="hidden" id="bulk-add-parent-id">
+            <p class="text-sm text-gray-600 mb-2">Use indentation (spaces or tabs) to create hierarchy.</p>
+            <textarea id="bulk-add-textarea" rows="8" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm font-mono"></textarea>
+            <div class="mt-6 flex justify-end gap-3"><button id="bulk-add-cancel-btn" class="px-4 py-2 bg-gray-200 rounded-lg">Cancel</button><button id="bulk-add-save-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Add Items</button></div>
+        </div>
+    </div>
 
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, onSnapshot, doc, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, doc, updateDoc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCKcC_TPxyP9-ErqUTZHWc4Il8llwpwUg8",
@@ -176,11 +171,12 @@
         const loggedOutView = document.getElementById('logged-out-view');
         const signOutBtn = document.getElementById('sign-out-btn');
         const searchInput = document.getElementById('search-input');
-        const bulkAddForm = document.getElementById('bulk-add-form');
-        const bulkTaskInput = document.getElementById('bulk-task-input');
+        const addSubjectForm = document.getElementById('add-subject-form');
+        const subjectInput = document.getElementById('subject-input');
         const taskListContainer = document.getElementById('task-list-container');
         const progressBar = document.getElementById('progress-bar');
         const progressText = document.getElementById('progress-text');
+        const calendarHeatmap = document.getElementById('calendar-heatmap');
         
         // Timer Elements
         const timerDisplay = document.getElementById('timer-display');
@@ -189,7 +185,7 @@
         const startPauseBtn = document.getElementById('start-pause-btn');
         const resetBtn = document.getElementById('reset-btn');
         
-        // Modal Elements
+        // Modals
         const notesModal = document.getElementById('notes-modal');
         const modalTaskId = document.getElementById('modal-task-id');
         const modalNotes = document.getElementById('modal-notes');
@@ -198,6 +194,12 @@
         const addAttachmentBtn = document.getElementById('add-attachment-btn');
         const modalSaveBtn = document.getElementById('modal-save-btn');
         const modalCancelBtn = document.getElementById('modal-cancel-btn');
+        const bulkAddModal = document.getElementById('bulk-add-modal');
+        const bulkAddParentId = document.getElementById('bulk-add-parent-id');
+        const bulkAddTextarea = document.getElementById('bulk-add-textarea');
+        const bulkAddSaveBtn = document.getElementById('bulk-add-save-btn');
+        const bulkAddCancelBtn = document.getElementById('bulk-add-cancel-btn');
+
 
         let tasksUnsubscribe = null;
         let allTasks = [];
@@ -227,7 +229,8 @@
             tasksUnsubscribe = onSnapshot(q, (snapshot) => {
                 allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderTaskTree(buildTree(allTasks));
-                updateProgressBar();
+                updateMasterProgressBar();
+                renderCalendar();
             });
         };
 
@@ -249,7 +252,7 @@
         const renderTask = (taskNode, level) => {
             const taskEl = document.createElement('div');
             taskEl.setAttribute('data-id', taskNode.id);
-            taskEl.className = `task-item-container ${taskNode.isCollapsed ? 'collapsed' : ''}`;
+            taskEl.className = `task-item-container border-l-2 border-transparent ${taskNode.isCollapsed ? 'collapsed' : ''}`;
             
             const hasChildren = taskNode.children && taskNode.children.length > 0;
             const isMaxDepth = level >= HIERARCHY.length - 1;
@@ -263,19 +266,34 @@
             const iconSet = checkboxIcons[level];
             const checkboxIconClass = taskNode.completed ? iconSet.checked : iconSet.unchecked;
             
+            // --- Subject-specific progress bar ---
+            let subjectProgressBarHTML = '';
+            if (level === 0) {
+                const descendantIds = getDescendantIds(taskNode.id, allTasks);
+                const relevantTasks = [taskNode, ...allTasks.filter(t => descendantIds.includes(t.id))];
+                const completedCount = relevantTasks.filter(t => t.completed).length;
+                const subjectProgress = relevantTasks.length > 0 ? (completedCount / relevantTasks.length) * 100 : 0;
+                subjectProgressBarHTML = `
+                    <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                        <div class="bg-blue-500 h-1.5 rounded-full" style="width: ${subjectProgress}%"></div>
+                    </div>`;
+            }
+
             taskEl.innerHTML = `
                 <div class="task-item group p-2 rounded-lg flex items-center gap-2 ${taskNode.isFlagged ? 'flagged-task' : 'bg-gray-50'}">
                     <i class="collapse-icon fa-solid fa-chevron-down w-4 text-center text-gray-400 ${hasChildren ? '' : 'invisible'}"></i>
                     <i class="checkbox-icon ${checkboxIconClass} text-indigo-600"></i>
                     <span class="flex-grow font-medium text-gray-800 ${taskNode.completed ? 'completed-task' : ''}" contenteditable="true" spellcheck="false">${taskNode.text}</span>
                     <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button title="Bulk Add" class="bulk-add-btn text-gray-400 hover:text-purple-500 ${level === 0 ? '' : 'hidden'}"><i class="fa-solid fa-file-import"></i></button>
                         <button title="Add ${isMaxDepth ? '' : HIERARCHY[level+1]}" class="add-subtask-btn text-gray-400 hover:text-green-500 ${isMaxDepth ? 'hidden' : ''}"><i class="fas fa-plus-circle"></i></button>
                         <button title="Flag" class="flag-btn text-gray-400 hover:text-yellow-500 ${taskNode.isFlagged ? 'text-yellow-500' : ''}"><i class="fas fa-flag"></i></button>
                         <button title="Notes" class="notes-btn text-gray-400 hover:text-blue-500"><i class="far fa-sticky-note"></i></button>
                         <button title="Delete" class="delete-btn text-gray-400 hover:text-red-500"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
-                <div class="children-container pl-6"></div>
+                ${subjectProgressBarHTML}
+                <div class="children-container pl-6 border-l-2 border-gray-200 ml-3"></div>
             `;
             taskListContainer.appendChild(taskEl);
 
@@ -285,6 +303,7 @@
             taskEl.querySelector('.collapse-icon').addEventListener('click', () => toggleCollapse(taskNode.id, !taskNode.isCollapsed));
             taskEl.querySelector('.checkbox-icon').addEventListener('click', () => toggleTaskCompleteWithChildren(taskNode.id, !taskNode.completed));
             taskEl.querySelector('.add-subtask-btn').addEventListener('click', () => addTask(HIERARCHY[level + 1], taskNode.id, level + 1));
+            taskEl.querySelector('.bulk-add-btn')?.addEventListener('click', () => openBulkAddModal(taskNode.id));
             taskEl.querySelector('.flag-btn').addEventListener('click', () => toggleFlag(taskNode.id, !taskNode.isFlagged));
             taskEl.querySelector('.notes-btn').addEventListener('click', () => openNotesModal(taskNode.id));
             taskEl.querySelector('.delete-btn').addEventListener('click', () => deleteTaskWithChildren(taskNode.id));
@@ -299,46 +318,23 @@
             return taskEl;
         };
         
-        const updateProgressBar = () => {
-            if (allTasks.length === 0) {
+        const updateMasterProgressBar = () => {
+            const subjects = allTasks.filter(t => t.parentId === null);
+            if (subjects.length === 0) {
                 progressBar.style.width = '0%';
                 progressText.textContent = '0% Complete';
                 return;
             }
-            const completedTasks = allTasks.filter(t => t.completed).length;
-            const percentage = Math.round((completedTasks / allTasks.length) * 100);
+            const completedSubjects = subjects.filter(s => {
+                const descendantIds = getDescendantIds(s.id, allTasks);
+                if (descendantIds.length === 0) return s.completed;
+                return descendantIds.every(id => allTasks.find(t => t.id === id)?.completed);
+            }).length;
+            const percentage = Math.round((completedSubjects / subjects.length) * 100);
             progressBar.style.width = `${percentage}%`;
             progressText.textContent = `${percentage}% Complete`;
         };
-
-        // --- Firestore Actions ---
-        const addTask = (text, parentId = null, level = 0) => {
-            const user = auth.currentUser;
-            if (!user) return;
-            addDoc(collection(db, 'users', user.uid, 'tasks'), {
-                text: `New ${text}`, parentId, level, completed: false, isFlagged: false, isCollapsed: false, notes: '', attachments: []
-            });
-        };
-
-        bulkAddForm.addEventListener('submit', e => {
-            e.preventDefault();
-            const lines = bulkTaskInput.value.split('\n').filter(line => line.trim() !== '');
-            if (lines.length === 0) return;
-            const user = auth.currentUser;
-            if (!user) return;
-            const batch = writeBatch(db);
-            const tasksRef = collection(db, 'users', user.uid, 'tasks');
-            lines.forEach(line => {
-                batch.set(doc(tasksRef), { text: line, parentId: null, level: 0, completed: false, isFlagged: false, isCollapsed: false, notes: '', attachments: [] });
-            });
-            batch.commit();
-            bulkTaskInput.value = '';
-        });
         
-        const updateTaskText = (id, text) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { text });
-        const toggleFlag = (id, isFlagged) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { isFlagged });
-        const toggleCollapse = (id, isCollapsed) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { isCollapsed });
-
         const getDescendantIds = (parentId, tasks) => {
             let descendants = [];
             const children = tasks.filter(task => task.parentId === parentId);
@@ -348,39 +344,45 @@
             });
             return descendants;
         };
+
+        // --- Firestore Actions ---
+        const addTask = (text, parentId = null, level = 0) => {
+            const user = auth.currentUser;
+            if (!user) return;
+            addDoc(collection(db, 'users', user.uid, 'tasks'), {
+                text: `New ${text}`, parentId, level, completed: false, isFlagged: false, isCollapsed: false, notes: '', attachments: [], createdAt: serverTimestamp()
+            });
+        };
+
+        addSubjectForm.addEventListener('submit', e => {
+            e.preventDefault();
+            if (subjectInput.value.trim() === '') return;
+            addTask(subjectInput.value, null, 0);
+            subjectInput.value = '';
+        });
         
-        // --- NEW: Smart Completion Logic ---
+        const updateTaskText = (id, text) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { text });
+        const toggleFlag = (id, isFlagged) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { isFlagged });
+        const toggleCollapse = (id, isCollapsed) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { isCollapsed });
+        
         const toggleTaskCompleteWithChildren = (taskId, isCompleted) => {
             const user = auth.currentUser;
             if (!user) return;
-            
             const batch = writeBatch(db);
             const taskMap = new Map(allTasks.map(task => [task.id, task]));
-
-            // 1. Update the clicked task and all its descendants
             const idsToUpdate = [taskId, ...getDescendantIds(taskId, allTasks)];
             idsToUpdate.forEach(id => {
-                batch.update(doc(db, 'users', user.uid, 'tasks', id), { completed: isCompleted });
+                batch.update(doc(db, 'users', user.uid, 'tasks', id), { completed: isCompleted, completedAt: isCompleted ? serverTimestamp() : null });
             });
-
-            // 2. Update all ancestors (bottom-up)
             let currentTask = taskMap.get(taskId);
             let parentId = currentTask ? currentTask.parentId : null;
             while (parentId) {
                 const parent = taskMap.get(parentId);
                 const siblings = allTasks.filter(t => t.parentId === parentId);
-                
-                // If unchecking, parent must be unchecked.
-                // If checking, check if all siblings are now complete.
-                const allSiblingsComplete = siblings.every(s => {
-                    return idsToUpdate.includes(s.id) ? isCompleted : s.completed;
-                });
-                
+                const allSiblingsComplete = siblings.every(s => idsToUpdate.includes(s.id) ? isCompleted : s.completed);
                 batch.update(doc(db, 'users', user.uid, 'tasks', parentId), { completed: allSiblingsComplete });
-
-                parentId = parent.parentId; // Move up the tree
+                parentId = parent.parentId;
             }
-            
             batch.commit();
         };
 
@@ -398,7 +400,6 @@
             const searchTerm = e.target.value.toLowerCase();
             const taskMap = new Map(allTasks.map(task => [task.id, task]));
             let matchingIds = new Set();
-
             if (searchTerm) {
                 allTasks.forEach(task => {
                     if (task.text.toLowerCase().includes(searchTerm)) {
@@ -422,9 +423,8 @@
             const seconds = (timerSeconds % 60).toString().padStart(2, '0');
             timerDisplay.textContent = `${minutes}:${seconds}`;
         };
-
         const startPauseTimer = () => {
-            if (timerSeconds <= 0 && !isTimerRunning) return; // Don't start a 00:00 timer
+            if (timerSeconds <= 0 && !isTimerRunning) return;
             if (isTimerRunning) {
                 clearInterval(timerInterval);
                 isTimerRunning = false;
@@ -446,7 +446,6 @@
                 }, 1000);
             }
         };
-
         const resetTimer = () => {
             clearInterval(timerInterval);
             isTimerRunning = false;
@@ -456,7 +455,6 @@
             startPauseBtn.textContent = 'Start';
             startPauseBtn.classList.replace('bg-yellow-500', 'bg-green-500');
         };
-
         setTimeBtn.addEventListener('click', () => {
             const mins = parseInt(minutesInput.value);
             if (!isNaN(mins) && mins > 0) {
@@ -468,6 +466,42 @@
         startPauseBtn.addEventListener('click', startPauseTimer);
         resetBtn.addEventListener('click', resetTimer);
 
+        // --- Calendar Heatmap Logic ---
+        const renderCalendar = () => {
+            calendarHeatmap.innerHTML = '';
+            const completionsByDate = {};
+            allTasks.forEach(task => {
+                if (task.completed && task.completedAt) {
+                    const dateStr = task.completedAt.toDate().toISOString().split('T')[0];
+                    completionsByDate[dateStr] = (completionsByDate[dateStr] || 0) + 1;
+                }
+            });
+
+            const today = new Date();
+            let date = new Date();
+            date.setFullYear(today.getFullYear() - 1);
+            
+            // Align to the first Sunday
+            date.setDate(date.getDate() - date.getDay());
+
+            for (let i = 0; i < 7 * 53; i++) { // 53 weeks to ensure we cover the full year
+                const dateStr = date.toISOString().split('T')[0];
+                const count = completionsByDate[dateStr] || 0;
+                let level = 0;
+                if (count > 0) level = 1;
+                if (count > 2) level = 2;
+                if (count > 5) level = 3;
+                if (count > 8) level = 4;
+                
+                const dayEl = document.createElement('div');
+                dayEl.className = 'w-full h-4 rounded-sm';
+                dayEl.style.backgroundColor = `rgba(34, 197, 94, ${level * 0.25 || 0.1})`;
+                dayEl.title = `${count} tasks on ${date.toDateString()}`;
+                calendarHeatmap.appendChild(dayEl);
+                date.setDate(date.getDate() + 1);
+            }
+        };
+
         // --- Modal Logic ---
         const openNotesModal = (id) => {
             const task = allTasks.find(t => t.id === id);
@@ -477,7 +511,14 @@
             renderAttachments(task.attachments || []);
             notesModal.classList.remove('hidden');
         };
+        const openBulkAddModal = (parentId) => {
+            bulkAddParentId.value = parentId;
+            bulkAddTextarea.value = '';
+            bulkAddModal.classList.remove('hidden');
+        };
         const closeNotesModal = () => notesModal.classList.add('hidden');
+        const closeBulkAddModal = () => bulkAddModal.classList.add('hidden');
+
         const renderAttachments = (attachments) => {
             modalAttachmentsList.innerHTML = '';
             attachments.forEach((att) => {
@@ -506,7 +547,39 @@
             updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { notes, attachments });
             closeNotesModal();
         });
+        bulkAddSaveBtn.addEventListener('click', () => {
+            const parentId = bulkAddParentId.value;
+            const text = bulkAddTextarea.value;
+            const parentTask = allTasks.find(t => t.id === parentId);
+            if (!parentTask) return;
+            
+            const lines = text.split('\n').filter(l => l.trim() !== '');
+            const user = auth.currentUser;
+            const batch = writeBatch(db);
+            const tasksRef = collection(db, 'users', user.uid, 'tasks');
+            
+            let lastParentIds = { [parentTask.level]: parentId };
+
+            lines.forEach(line => {
+                const indentation = line.match(/^\s*/)[0].length;
+                const level = parentTask.level + 1 + Math.floor(indentation / 4); // Assuming 4 spaces per indent
+                const text = line.trim();
+
+                if (level < HIERARCHY.length) {
+                    const currentParentId = lastParentIds[level - 1];
+                    const newDocRef = doc(tasksRef);
+                    batch.set(newDocRef, {
+                        text, parentId: currentParentId, level, completed: false, isFlagged: false, isCollapsed: false, notes: '', attachments: [], createdAt: serverTimestamp()
+                    });
+                    lastParentIds[level] = newDocRef.id;
+                }
+            });
+            batch.commit();
+            closeBulkAddModal();
+        });
+
         modalCancelBtn.addEventListener('click', closeNotesModal);
+        bulkAddCancelBtn.addEventListener('click', closeBulkAddModal);
 
         // --- General Event Listeners ---
         signOutBtn.addEventListener('click', () => signOut(auth));
