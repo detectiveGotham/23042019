@@ -3,170 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Productivity Hub</title>
-    <!-- Tailwind CSS for styling -->
+    <title>Productivity Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Orbitron:wght@700&family=Roboto+Condensed:wght@700&family=VT323&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
-            --bg-color: #f0f2f5;
-            --surface-color: #ffffff;
-            --text-color: #1f2937;
-            --text-muted-color: #6b7280;
-            --primary-color: #4f46e5;
-            --primary-text-color: #ffffff;
-            --accent-color: #10b981;
-            --border-color: #e5e7eb;
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --main-bg: #f4f4f4; --surface-color: #ffffff; --text-color: #333333; --text-muted-color: #777;
+            --primary-color: #0D47A1; --secondary-color: #00796B; --accent-color: #D84315; --border-color: #cccccc;
+            --danger-color: #c62828; --main-font: 'VT323', monospace; --header-font: 'VT323', monospace;
+            --button-radius: 0px; --special-bg: var(--main-bg);
+            --progress-bar-gradient: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
         }
-        .theme-batman {
-            --bg-color: #0d1117; --surface-color: #161b22; --text-color: #c9d1d9; --text-muted-color: #8b949e;
-            --primary-color: #f0b90b; --primary-text-color: #0d1117; --accent-color: #3fb950; --border-color: #30363d;
+        body.theme-wonder-woman {
+            --main-bg: #002266; --surface-color: #003366; --text-color: #FFD700; --text-muted-color: #c0c0c0;
+            --primary-color: #FFD700; --secondary-color: #C00000; --accent-color: #FFD700; --border-color: #FFD700;
+            --danger-color: #8B0000; --main-font: 'Cinzel', serif; --header-font: 'Cinzel', serif;
+            --button-radius: 4px; --special-bg: var(--main-bg);
+            --progress-bar-gradient: linear-gradient(90deg, #C00000, #FFD700);
         }
-        .theme-iron-man {
-            --bg-color: #242424; --surface-color: #3A0000; --text-color: #FDFEFE; --text-muted-color: #B2BABB;
-            --primary-color: #AA0000; --primary-text-color: #FDFEFE; --accent-color: #D4AC0D; --border-color: #5A0000;
+        body.theme-iron-man {
+            --main-bg: #2E2E2E; --surface-color: #1a1a1a; --text-color: #00FFFF; --text-muted-color: #B2BABB;
+            --primary-color: #B22222; --secondary-color: #00FFFF; --accent-color: #00FFFF; --border-color: #00FFFF;
+            --danger-color: #800000; --main-font: 'Orbitron', sans-serif; --header-font: 'Orbitron', sans-serif;
+            --button-radius: 2px; --special-bg: repeating-conic-gradient(var(--main-bg) 0% 25%, #333 0% 50%) 50% / 20px 20px;
+            --progress-bar-gradient: linear-gradient(90deg, #00FFFF, #00a1a1);
         }
-        .theme-wonder-woman {
-            --bg-color: #001f3f; --surface-color: #003366; --text-color: #FFD700; --text-muted-color: #c0c0c0;
-            --primary-color: #FFD700; --primary-text-color: #001f3f; --accent-color: #C00000; --border-color: #00509E;
+        body.theme-batman {
+            --main-bg: #121212; --surface-color: #1a1a1a; --text-color: #F5DE50; --text-muted-color: #8b949e;
+            --primary-color: #F5DE50; --secondary-color: #708090; --accent-color: #F5DE50; --border-color: #F5DE50;
+            --danger-color: #444; --main-font: 'Roboto Condensed', sans-serif; --header-font: 'Roboto Condensed', sans-serif;
+            --button-radius: 0px; --special-bg: var(--main-bg);
+            --progress-bar-gradient: linear-gradient(90deg, #F5DE50, #F5DE50);
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
+            background-color: var(--main-bg);
+            background-image: var(--special-bg);
             color: var(--text-color);
-            transition: background-color 0.3s ease;
+            font-family: var(--main-font);
+            transition: background-color 0.5s;
         }
-        .surface { background-color: var(--surface-color); border: 1px solid var(--border-color); box-shadow: var(--shadow); }
+        h1, h2, h3, h4, h5, h6 { font-family: var(--header-font); }
+        .surface { background-color: var(--surface-color); border: 2px solid var(--border-color); }
         .text-muted { color: var(--text-muted-color); }
-        .btn-primary { background-color: var(--primary-color); color: var(--primary-text-color); }
-        .btn-secondary { background-color: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); }
-        .progress-bar-bg { background-color: var(--border-color); }
-        .progress-bar-fill { background-color: var(--accent-color); }
-        .progress-bar-subject { background-color: var(--primary-color); }
-        .theme-btn.active { border-color: var(--primary-color); box-shadow: 0 0 0 2px var(--primary-color); }
-        
-        .completed-task > span { text-decoration: line-through; color: var(--text-muted-color); }
-        .flagged-task { background-color: var(--primary-color) !important; background-opacity: 0.1; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .modal { transition: opacity 0.25s ease; }
-        .modal-content { transition: transform 0.25s ease; }
-        
+        .retro-btn {
+            background-color: transparent; border: 2px solid var(--primary-color); color: var(--primary-color);
+            padding: 8px 12px; text-transform: uppercase; cursor: pointer; transition: all 0.2s;
+            font-weight: bold; border-radius: var(--button-radius);
+        }
+        .retro-btn:hover { background-color: var(--primary-color); color: var(--main-bg); }
+        .retro-btn.secondary { border-color: var(--secondary-color); color: var(--secondary-color); }
+        .retro-btn.secondary:hover { background-color: var(--secondary-color); color: var(--main-bg); }
+        .progress-bar-container { border: 2px solid var(--border-color); background-color: rgba(0,0,0,0.2); padding: 2px; }
+        .progress-bar { background-image: var(--progress-bar-gradient); }
+        .subject-progress-bar { background-color: var(--secondary-color); }
+        .theme-switcher-btn { padding: 4px 8px; border: 1px solid var(--text-color); cursor: pointer; opacity: 0.6; }
+        .theme-switcher-btn.active { opacity: 1; background-color: var(--text-color); color: var(--main-bg); }
+        .modal-content { background-color: var(--main-bg); border: 2px solid var(--text-color); }
+        .calendar-day.today { border: 2px solid var(--primary-color); border-radius: 50%; }
+        .calendar-day.bookmarked { box-shadow: 0 0 0 2px var(--accent-color) inset; border-radius: 4px; }
         .checkbox-icon { font-family: "Font Awesome 6 Free"; font-weight: 900; display: inline-block; width: 1.25rem; text-align: center; cursor: pointer; }
         .collapse-icon { transition: transform 0.2s ease-in-out; }
         .collapsed .collapse-icon { transform: rotate(-90deg); }
-        @keyframes flash { 0%, 100% { color: red; } 50% { color: inherit; } }
-        .timer-flash { animation: flash 1s 3; }
-        .calendar-day.today { box-shadow: 0 0 0 2px var(--primary-color); border-radius: 50%; }
+        .completed-task > span { text-decoration: line-through; color: var(--text-muted-color); }
         .dragging { opacity: 0.5; }
         .drag-over { border-top: 2px solid var(--primary-color); }
     </style>
 </head>
-<body>
+<body class="theme-classic">
 
-    <!-- Logged Out View -->
-    <div id="logged-out-view" class="hidden h-screen flex items-center justify-center">
-        <div class="text-center bg-white p-12 rounded-xl shadow-lg">
-            <h2 class="text-2xl font-bold mb-4">Access Denied</h2>
-            <p class="text-gray-600 mb-6">Please log in to access your productivity hub.</p>
-            <a href="index.html" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">Go to Login Page</a>
+    <div id="logged-out-view" class="hidden h-screen flex items-center justify-center p-4">
+        <div class="surface p-12 space-y-4 text-center">
+            <h2 class="text-3xl">ACCESS DENIED</h2>
+            <p class="text-muted">Please log in to access your Productivity Hub.</p>
+            <a href="index.html" class="retro-btn inline-block">GO TO LOGIN</a>
         </div>
     </div>
 
-    <!-- Main Logged In View -->
-    <div id="logged-in-view" class="hidden p-4 md:p-8">
-        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-            <h1 class="text-4xl font-extrabold">Productivity Hub</h1>
-            <div class="flex items-center gap-4 w-full md:w-auto">
-                 <div class="relative w-full md:w-64">
-                    <input type="text" id="search-input" placeholder="Search tasks..." class="w-full pl-10 pr-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 surface text-muted">
-                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-muted"></i>
-                </div>
+    <div id="logged-in-view" class="hidden opacity-0 transition-opacity duration-500">
+        <header class="p-4 flex justify-between items-center border-b-2" style="border-color: var(--border-color);">
+            <h1 class="text-3xl">PRODUCTIVITY HUB</h1>
+            <div class="flex items-center gap-4">
+                <div id="theme-switcher" class="flex items-center space-x-1"></div>
                 <div id="save-status" class="text-sm text-muted"></div>
-                <button id="sound-toggle" class="text-lg text-muted hover:text-color"><i class="fas fa-volume-off"></i></button>
-                <button id="sign-out-btn" class="text-sm font-medium text-muted hover:text-color flex-shrink-0">Sign Out <i class="fas fa-sign-out-alt ml-1"></i></button>
+                <button id="sign-out-btn" class="retro-btn secondary">QUIT</button>
             </div>
         </header>
 
-        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Main Content: Checklist -->
-            <div class="lg:col-span-2 space-y-6">
-                <div class="surface p-6 rounded-xl">
-                    <div class="flex justify-between items-center mb-4">
-                         <h2 class="text-xl font-bold">My Master Checklist</h2>
-                         <span id="progress-text" class="text-sm font-semibold text-muted">0% Complete</span>
-                    </div>
-                    <div class="w-full rounded-full h-2.5 mb-4 progress-bar-bg">
-                        <div id="progress-bar" class="h-2.5 rounded-full transition-all duration-500 progress-bar-fill" style="width: 0%"></div>
-                    </div>
-                    <div id="task-list-container" class="space-y-2 max-h-[60vh] overflow-y-auto no-scrollbar">
-                        <p id="loading-placeholder" class="text-muted">Loading your tasks...</p>
+        <div class="flex flex-col md:flex-row">
+            <!-- Sidebar -->
+            <aside class="w-full md:w-1/3 lg:w-1/4 p-4 space-y-6 border-b-2 md:border-b-0 md:border-r-2" style="border-color: var(--border-color);">
+                <div class="surface p-4">
+                    <h2 class="text-xl mb-2">ACHIEVEMENTS</h2>
+                    <div class="border-2 p-4 text-center" style="border-color: var(--secondary-color);">
+                        <i class="fas fa-shield-halved text-4xl" style="color: var(--primary-color);"></i>
+                        <h3 class="font-bold mt-2">THE PILLAR - LVL 0</h3>
+                        <p class="text-sm text-muted">Your discipline builds the foundation.</p>
                     </div>
                 </div>
-                <div class="surface p-6 rounded-xl">
-                    <h2 class="text-xl font-bold mb-4">Add New Subject</h2>
-                    <form id="add-subject-form" class="flex gap-2">
-                        <input id="subject-input" class="w-full p-3 border rounded-lg surface text-muted" placeholder="Enter a new subject...">
-                        <button type="submit" class="px-4 btn-primary rounded-lg">Add</button>
-                        <button type="button" id="global-bulk-add-btn" class="px-4 btn-secondary rounded-lg" title="Bulk Add from Text"><i class="fas fa-file-import"></i></button>
-                    </form>
+                <div class="surface p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <button id="prev-month-btn" class="retro-btn secondary">&lt;</button>
+                        <h2 id="calendar-header" class="text-xl"></h2>
+                        <button id="next-month-btn" class="retro-btn secondary">&gt;</button>
+                    </div>
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-sm mb-2"></div>
+                    <button id="today-btn" class="retro-btn w-full">TODAY</button>
                 </div>
-            </div>
+                <div class="surface p-4">
+                    <h2 class="text-xl mb-2">STOPWATCH</h2>
+                    <p id="stopwatch-display" class="text-5xl text-center font-mono">00:00:00</p>
+                    <div class="flex justify-center gap-2 mt-4">
+                        <button id="start-pause-stopwatch-btn" class="retro-btn w-24">START</button>
+                        <button id="reset-stopwatch-btn" class="retro-btn secondary w-24">RESET</button>
+                    </div>
+                </div>
+            </aside>
 
-            <!-- Sidebar: Widgets -->
-            <div class="space-y-6">
-                <div class="surface p-6 rounded-xl">
-                    <h2 class="text-xl font-bold mb-4">Focus Mode</h2>
-                    <div class="text-center"><p id="timer-display" class="text-5xl font-mono font-bold">00:00</p></div>
-                    <div class="flex items-center gap-2 mt-4"><input type="number" id="minutes-input" placeholder="Mins" min="0" class="w-full p-2 border rounded-lg text-center surface text-muted"><button id="set-time-btn" class="px-4 py-2 rounded-lg btn-secondary">Set</button></div>
-                    <div class="flex justify-center gap-2 mt-4"><button id="start-pause-btn" class="px-4 py-2 text-white rounded-lg w-24 bg-green-500">Start</button><button id="reset-btn" class="px-4 py-2 bg-gray-500 text-white rounded-lg">Reset</button></div>
+            <!-- Main Content -->
+            <main class="w-full md:w-2/3 lg:w-3/4 p-4 space-y-6">
+                <div class="flex items-center gap-4">
+                    <input type="text" id="search-input" placeholder="SEARCH TASKS..." class="flex-grow p-2 surface text-xl">
+                    <button id="global-bulk-add-btn" class="retro-btn secondary">BULK ADD</button>
+                    <button id="add-subject-btn" class="retro-btn">ADD SUBJECT</button>
                 </div>
-                <div class="surface p-6 rounded-xl">
-                    <div class="flex justify-between items-center mb-4">
-                        <button id="prev-month-btn" class="p-2 rounded-full hover:bg-gray-200"><i class="fas fa-chevron-left"></i></button>
-                        <h2 id="calendar-header" class="text-xl font-bold"></h2>
-                        <button id="next-month-btn" class="p-2 rounded-full hover:bg-gray-200"><i class="fas fa-chevron-right"></i></button>
+                <div class="surface p-4">
+                    <div class="flex justify-between items-center mb-2">
+                         <h2 class="text-xl">MASTER CHECKLIST</h2>
+                         <span id="progress-text" class="text-sm font-bold text-muted">0%</span>
                     </div>
-                    <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-sm"></div>
-                </div>
-                <div class="surface p-6 rounded-xl">
-                    <h2 class="text-xl font-bold mb-4">Select Theme</h2>
-                    <div id="theme-selector" class="grid grid-cols-2 gap-4">
-                        <button class="p-4 border rounded-lg theme-btn" data-theme="classic">Classic</button>
-                        <button class="p-4 border rounded-lg theme-btn bg-gray-800 text-white" data-theme="batman">Batman</button>
-                        <button class="p-4 border rounded-lg theme-btn" data-theme="iron-man">Iron Man</button>
-                        <button class="p-4 border rounded-lg theme-btn" data-theme="wonder-woman">Wonder Woman</button>
+                    <div class="progress-bar-container mb-4">
+                        <div id="progress-bar" class="progress-bar h-full"><span id="progress-bar-text" class="progress-text"></span></div>
+                    </div>
+                    <div id="task-list-container" class="space-y-4 max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
+                        <p id="loading-placeholder" class="text-muted">LOADING...</p>
                     </div>
                 </div>
-            </div>
-        </main>
+            </main>
+        </div>
     </div>
     
     <!-- Modals -->
-    <div id="notes-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
-        <div class="modal-content surface rounded-lg shadow-xl w-full max-w-lg p-6 transform -translate-y-10">
-            <h3 class="text-xl font-bold mb-4">Edit Details</h3>
-            <input type="hidden" id="modal-task-id">
-            <div><label for="modal-notes" class="block text-sm font-medium">Notes</label><textarea id="modal-notes" rows="4" class="mt-1 block w-full rounded-md shadow-sm surface border text-muted"></textarea></div>
-            <div class="mt-4"><label for="modal-attachments" class="block text-sm font-medium">Attachments (Links)</label><div id="modal-attachments-list" class="space-y-2 mt-2"></div><div class="flex gap-2 mt-2"><input type="url" id="new-attachment-input" placeholder="https://example.com" class="flex-grow rounded-md shadow-sm surface border text-muted"><button id="add-attachment-btn" class="px-3 py-1 rounded-md btn-secondary">Add</button></div></div>
-            <div class="mt-6 flex justify-end gap-3"><button id="modal-cancel-btn" class="px-4 py-2 rounded-lg btn-secondary">Cancel</button><button id="modal-save-btn" class="px-4 py-2 rounded-lg btn-primary">Save</button></div>
-        </div>
-    </div>
-    <div id="bulk-add-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
-        <div class="modal-content surface rounded-lg shadow-xl w-full max-w-lg p-6 transform -translate-y-10">
-            <h3 id="bulk-add-title" class="text-xl font-bold mb-4">Bulk Add</h3>
-            <input type="hidden" id="bulk-add-parent-id">
-            <p class="text-sm text-muted mb-2">Use indentation (2 spaces) for hierarchy.</p>
-            <textarea id="bulk-add-textarea" rows="8" class="mt-1 block w-full rounded-md shadow-sm font-mono surface border text-muted" placeholder="Subject Name&#10;  Section Name&#10;    Chapter Name&#10;      Topic Name&#10;Another Subject"></textarea>
-            <div class="mt-6 flex justify-end gap-3"><button id="bulk-add-cancel-btn" class="px-4 py-2 rounded-lg btn-secondary">Cancel</button><button id="bulk-add-save-btn" class="px-4 py-2 rounded-lg btn-primary">Add Items</button></div>
-        </div>
+    <div id="modal-container" class="hidden fixed inset-0 flex items-center justify-center p-4">
+        <div id="modal-content" class="modal-content w-full max-w-2xl p-6 space-y-4"></div>
     </div>
 
     <!-- Firebase SDKs -->
@@ -181,8 +163,7 @@
             projectId: "forge23-04-2019",
             storageBucket: "forge23-04-2019.appspot.com",
             messagingSenderId: "725283917440",
-            appId: "1:725283917440:web:3627779e1de23153af2065",
-            measurementId: "G-FHF15XRWC3"
+            appId: "1:725283917440:web:3627779e1de23153af2065"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -194,11 +175,11 @@
         const loggedOutView = document.getElementById('logged-out-view');
         const signOutBtn = document.getElementById('sign-out-btn');
         const searchInput = document.getElementById('search-input');
-        const addSubjectForm = document.getElementById('add-subject-form');
-        const subjectInput = document.getElementById('subject-input');
+        const addSubjectBtn = document.getElementById('add-subject-btn');
         const taskListContainer = document.getElementById('task-list-container');
         const progressBar = document.getElementById('progress-bar');
         const progressText = document.getElementById('progress-text');
+        const progressBarText = document.getElementById('progress-bar-text');
         const saveStatus = document.getElementById('save-status');
         
         // Calendar
@@ -206,65 +187,47 @@
         const calendarHeader = document.getElementById('calendar-header');
         const prevMonthBtn = document.getElementById('prev-month-btn');
         const nextMonthBtn = document.getElementById('next-month-btn');
+        const todayBtn = document.getElementById('today-btn');
         
-        // Timer
-        const timerDisplay = document.getElementById('timer-display');
-        const minutesInput = document.getElementById('minutes-input');
-        const setTimeBtn = document.getElementById('set-time-btn');
-        const startPauseBtn = document.getElementById('start-pause-btn');
-        const resetBtn = document.getElementById('reset-btn');
+        // Stopwatch
+        const stopwatchDisplay = document.getElementById('stopwatch-display');
+        const startPauseStopwatchBtn = document.getElementById('start-pause-stopwatch-btn');
+        const resetStopwatchBtn = document.getElementById('reset-stopwatch-btn');
         
         // Modals
-        const notesModal = document.getElementById('notes-modal');
-        const modalTaskId = document.getElementById('modal-task-id');
-        const modalNotes = document.getElementById('modal-notes');
-        const modalAttachmentsList = document.getElementById('modal-attachments-list');
-        const newAttachmentInput = document.getElementById('new-attachment-input');
-        const addAttachmentBtn = document.getElementById('add-attachment-btn');
-        const modalSaveBtn = document.getElementById('modal-save-btn');
-        const modalCancelBtn = document.getElementById('modal-cancel-btn');
-        const bulkAddModal = document.getElementById('bulk-add-modal');
-        const bulkAddTitle = document.getElementById('bulk-add-title');
-        const bulkAddParentId = document.getElementById('bulk-add-parent-id');
-        const bulkAddTextarea = document.getElementById('bulk-add-textarea');
-        const bulkAddSaveBtn = document.getElementById('bulk-add-save-btn');
-        const bulkAddCancelBtn = document.getElementById('bulk-add-cancel-btn');
+        const modalContainer = document.getElementById('modal-container');
+        const modalContent = document.getElementById('modal-content');
         const globalBulkAddBtn = document.getElementById('global-bulk-add-btn');
 
-        // Theme & Sound
-        const themeSelector = document.getElementById('theme-selector');
-        const soundToggle = document.getElementById('sound-toggle');
-        let soundEnabled = false;
-        const sounds = {
-            complete: new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_a709a13a6d.mp3'),
-            timerDone: new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_59b39358b0.mp3')
-        };
-
+        // Theme
+        const themeSwitcher = document.getElementById('theme-switcher');
 
         let tasksUnsubscribe = null;
         let settingsUnsubscribe = null;
         let allTasks = [];
         const HIERARCHY = ['Subject', 'Section', 'Chapter', 'Topic'];
         let currentCalendarDate = new Date();
+        let bookmarkedDate = null;
 
-        let timerInterval = null;
-        let timerSeconds = 0;
-        let isTimerRunning = false;
+        let stopwatchInterval = null;
+        let stopwatchSeconds = 0;
+        let isStopwatchRunning = false;
         let saveTimeout;
         
         // --- Auth State ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 loggedInView.classList.remove('hidden');
+                setTimeout(() => loggedInView.classList.remove('opacity-0'), 50);
                 loggedOutView.classList.add('hidden');
                 getTasks(user.uid);
                 getSettings(user.uid);
             } else {
-                loggedInView.classList.add('hidden');
+                loggedInView.classList.add('hidden', 'opacity-0');
                 loggedOutView.classList.remove('hidden');
                 if (tasksUnsubscribe) tasksUnsubscribe();
                 if (settingsUnsubscribe) settingsUnsubscribe();
-                clearInterval(timerInterval);
+                clearInterval(stopwatchInterval);
             }
         });
 
@@ -272,25 +235,19 @@
         const getSettings = (userId) => {
             const settingsRef = doc(db, 'users', userId, 'settings', 'userSettings');
             settingsUnsubscribe = onSnapshot(settingsRef, (doc) => {
-                if (doc.exists()) {
-                    const settings = doc.data();
-                    applyTheme(settings.theme || 'classic');
-                } else {
-                    applyTheme('classic');
-                }
+                const theme = doc.exists() ? doc.data().theme : 'classic';
+                applyTheme(theme);
             });
         };
 
         const applyTheme = (themeName) => {
             document.body.className = `theme-${themeName}`;
-            document.querySelectorAll('.theme-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.theme === themeName);
-            });
+            const themes = ['classic', 'wonder-woman', 'iron-man', 'batman'];
+            themeSwitcher.innerHTML = themes.map(t => `<button data-theme="${t}" class="theme-switcher-btn ${t === themeName ? 'active' : ''}">${t.charAt(0).toUpperCase()}</button>`).join('');
         };
 
         const saveTheme = (themeName) => {
-            const user = auth.currentUser;
-            if (!user) return;
+            const user = auth.currentUser; if (!user) return;
             const settingsRef = doc(db, 'users', user.uid, 'settings', 'userSettings');
             setDoc(settingsRef, { theme: themeName }, { merge: true });
         };
@@ -300,7 +257,7 @@
             const q = query(collection(db, 'users', userId, 'tasks'));
             tasksUnsubscribe = onSnapshot(q, (snapshot) => {
                 allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                handleSearch(); // Re-apply search filter on data change
+                handleSearch();
                 updateMasterProgressBar();
                 renderCalendar();
             });
@@ -315,7 +272,7 @@
         const renderTaskTree = (taskTree) => {
             taskListContainer.innerHTML = '';
             if (taskTree.length === 0) {
-                taskListContainer.innerHTML = `<p class="text-muted">No tasks found. Add a subject below!</p>`;
+                taskListContainer.innerHTML = `<p class="text-muted">NO TASKS FOUND. ADD A SUBJECT TO BEGIN.</p>`;
                 return;
             }
             taskTree.forEach(taskNode => renderTask(taskNode, 0));
@@ -325,7 +282,7 @@
             const taskEl = document.createElement('div');
             taskEl.setAttribute('data-id', taskNode.id);
             taskEl.setAttribute('draggable', true);
-            taskEl.className = `task-item-container border-l-2 border-transparent ${taskNode.isCollapsed ? 'collapsed' : ''}`;
+            taskEl.className = `task-item-container ${taskNode.isCollapsed ? 'collapsed' : ''}`;
             
             const hasChildren = taskNode.children && taskNode.children.length > 0;
             const isMaxDepth = level >= HIERARCHY.length - 1;
@@ -346,18 +303,17 @@
                 const completedCount = relevantTasks.filter(t => t.completed).length;
                 const subjectProgress = relevantTasks.length > 0 ? (completedCount / relevantTasks.length) * 100 : 0;
                 subjectProgressBarHTML = `
-                    <div class="w-full rounded-full h-1.5 mt-2 progress-bar-bg">
-                        <div class="h-1.5 rounded-full progress-bar-subject" style="width: ${subjectProgress}%"></div>
+                    <div class="progress-bar-container mt-2 h-2">
+                        <div class="subject-progress-bar h-full" style="width: ${subjectProgress}%"></div>
                     </div>`;
             }
 
             taskEl.innerHTML = `
-                <div class="task-item group p-2 rounded-lg flex items-center gap-2 surface">
+                <div class="task-item group p-2 rounded-lg flex items-center gap-2 surface" style="border-color: var(--secondary-color);">
                     <i class="collapse-icon fa-solid fa-chevron-down w-4 text-center text-muted ${hasChildren ? '' : 'invisible'}"></i>
                     <i class="checkbox-icon ${checkboxIconClass}"></i>
-                    <span class="flex-grow font-medium ${taskNode.completed ? 'completed-task' : ''}" contenteditable="true" spellcheck="false">${taskNode.text}</span>
+                    <span class="flex-grow font-bold text-lg ${taskNode.completed ? 'completed-task' : ''}" contenteditable="true" spellcheck="false">${taskNode.text}</span>
                     <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button title="Bulk Add" class="bulk-add-btn text-muted hover:text-purple-500 ${level === 0 ? '' : 'hidden'}"><i class="fa-solid fa-file-import"></i></button>
                         <button title="Add ${isMaxDepth ? '' : HIERARCHY[level+1]}" class="add-subtask-btn text-muted hover:text-green-500 ${isMaxDepth ? 'hidden' : ''}"><i class="fas fa-plus-circle"></i></button>
                         <button title="Flag" class="flag-btn text-muted hover:text-yellow-500 ${taskNode.isFlagged ? 'text-yellow-500' : ''}"><i class="fas fa-flag"></i></button>
                         <button title="Notes" class="notes-btn text-muted hover:text-blue-500"><i class="far fa-sticky-note"></i></button>
@@ -365,7 +321,7 @@
                     </div>
                 </div>
                 ${subjectProgressBarHTML}
-                <div class="children-container pl-6 border-l-2 ml-3 border-color"></div>
+                <div class="children-container pl-6 border-l-2 ml-3" style="border-color: var(--border-color);"></div>
             `;
             taskListContainer.appendChild(taskEl);
 
@@ -375,29 +331,15 @@
             taskEl.querySelector('.collapse-icon').addEventListener('click', () => toggleCollapse(taskNode.id, !taskNode.isCollapsed));
             taskEl.querySelector('.checkbox-icon').addEventListener('click', () => toggleTaskCompleteWithChildren(taskNode.id, !taskNode.completed));
             taskEl.querySelector('.add-subtask-btn').addEventListener('click', () => addTask(HIERARCHY[level + 1], taskNode.id, level + 1));
-            taskEl.querySelector('.bulk-add-btn')?.addEventListener('click', () => openBulkAddModal(taskNode.id));
             taskEl.querySelector('.flag-btn').addEventListener('click', () => toggleFlag(taskNode.id, !taskNode.isFlagged));
             taskEl.querySelector('.notes-btn').addEventListener('click', () => openNotesModal(taskNode.id));
             taskEl.querySelector('.delete-btn').addEventListener('click', () => deleteTaskWithChildren(taskNode.id));
 
-            // Drag and Drop Listeners
-            taskEl.addEventListener('dragstart', e => {
-                e.dataTransfer.setData('text/plain', taskNode.id);
-                e.currentTarget.classList.add('dragging');
-            });
+            taskEl.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', taskNode.id); e.currentTarget.classList.add('dragging'); });
             taskEl.addEventListener('dragend', e => e.currentTarget.classList.remove('dragging'));
-            taskEl.addEventListener('dragover', e => {
-                e.preventDefault();
-                e.currentTarget.classList.add('drag-over');
-            });
+            taskEl.addEventListener('dragover', e => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); });
             taskEl.addEventListener('dragleave', e => e.currentTarget.classList.remove('drag-over'));
-            taskEl.addEventListener('drop', e => {
-                e.preventDefault();
-                e.currentTarget.classList.remove('drag-over');
-                const draggedId = e.dataTransfer.getData('text/plain');
-                handleDrop(draggedId, taskNode.id);
-            });
-
+            taskEl.addEventListener('drop', e => { e.preventDefault(); e.currentTarget.classList.remove('drag-over'); handleDrop(e.dataTransfer.getData('text/plain'), taskNode.id); });
 
             if (hasChildren && !taskNode.isCollapsed) {
                 const childrenContainer = taskEl.querySelector('.children-container');
@@ -413,7 +355,8 @@
             const subjects = allTasks.filter(t => t.parentId === null);
             if (subjects.length === 0) {
                 progressBar.style.width = '0%';
-                progressText.textContent = '0% Complete';
+                progressText.textContent = '0%';
+                progressBarText.textContent = '';
                 return;
             }
             const completedSubjects = subjects.filter(s => {
@@ -424,7 +367,8 @@
             }).length;
             const percentage = Math.round((completedSubjects / subjects.length) * 100);
             progressBar.style.width = `${percentage}%`;
-            progressText.textContent = `${percentage}% Complete`;
+            progressText.textContent = `${percentage}%`;
+            progressBarText.textContent = `${completedSubjects}/${subjects.length} SUBJECTS`;
         };
         
         const getDescendantIds = (parentId, tasks) => {
@@ -439,32 +383,28 @@
 
         // --- Firestore Actions ---
         const showSaveStatus = () => {
-            saveStatus.textContent = 'Saving...';
+            saveStatus.textContent = 'SAVING...';
             clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(() => {
-                saveStatus.textContent = 'All changes saved';
-            }, 1500);
+            saveTimeout = setTimeout(() => { saveStatus.textContent = 'SYNCED'; }, 1500);
         };
 
         const addTask = (text, parentId = null, level = 0) => {
-            const user = auth.currentUser;
-            if (!user) return;
+            const user = auth.currentUser; if (!user) return;
             showSaveStatus();
             addDoc(collection(db, 'users', user.uid, 'tasks'), {
                 text, parentId, level, completed: false, isFlagged: false, isCollapsed: false, notes: '', attachments: [], createdAt: serverTimestamp()
             });
         };
 
-        addSubjectForm.addEventListener('submit', e => {
-            e.preventDefault();
-            if (subjectInput.value.trim() === '') return;
-            addTask(subjectInput.value, null, 0);
-            subjectInput.value = '';
+        addSubjectBtn.addEventListener('click', () => {
+             const subjectName = prompt("Enter new subject name:");
+             if(subjectName && subjectName.trim() !== "") {
+                 addTask(subjectName.trim(), null, 0);
+             }
         });
         
         const updateTask = (id, data) => {
-            const user = auth.currentUser;
-            if (!user) return;
+            const user = auth.currentUser; if (!user) return;
             showSaveStatus();
             updateDoc(doc(db, 'users', user.uid, 'tasks', id), data);
         };
@@ -473,10 +413,8 @@
         const toggleCollapse = (id, isCollapsed) => updateTask(id, { isCollapsed });
         
         const toggleTaskCompleteWithChildren = (taskId, isCompleted) => {
-            const user = auth.currentUser;
-            if (!user) return;
+            const user = auth.currentUser; if (!user) return;
             showSaveStatus();
-            if (isCompleted && soundEnabled) sounds.complete.play();
             const batch = writeBatch(db);
             const taskMap = new Map(allTasks.map(task => [task.id, task]));
             const idsToUpdate = [taskId, ...getDescendantIds(taskId, allTasks)];
@@ -496,8 +434,7 @@
         };
 
         const deleteTaskWithChildren = (taskId) => {
-            const user = auth.currentUser;
-            if (!user) return;
+            const user = auth.currentUser; if (!user) return;
             showSaveStatus();
             const idsToDelete = [taskId, ...getDescendantIds(taskId, allTasks)];
             const batch = writeBatch(db);
@@ -505,20 +442,14 @@
             batch.commit();
         };
 
-        // --- Drag & Drop Logic ---
         const handleDrop = (draggedId, targetId) => {
             const draggedTask = allTasks.find(t => t.id === draggedId);
             const targetTask = allTasks.find(t => t.id === targetId);
             if (!draggedTask || !targetTask || draggedId === targetId) return;
-            
-            // Prevent dropping a parent into one of its own children
             if (getDescendantIds(draggedId, allTasks).includes(targetId)) return;
-
             updateTask(draggedId, { parentId: targetTask.parentId, level: targetTask.level });
         };
 
-
-        // --- Search Logic ---
         const handleSearch = () => {
             const searchTerm = searchInput.value.trim().toLowerCase();
             const taskMap = new Map(allTasks.map(task => [task.id, task]));
@@ -541,56 +472,36 @@
         };
         searchInput.addEventListener('input', handleSearch);
 
-
-        // --- Timer Logic ---
-        const updateTimerDisplay = () => {
-            const minutes = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
-            const seconds = (timerSeconds % 60).toString().padStart(2, '0');
-            timerDisplay.textContent = `${minutes}:${seconds}`;
+        // --- Stopwatch Logic ---
+        const updateStopwatchDisplay = () => {
+            const hours = Math.floor(stopwatchSeconds / 3600).toString().padStart(2, '0');
+            const minutes = Math.floor((stopwatchSeconds % 3600) / 60).toString().padStart(2, '0');
+            const seconds = (stopwatchSeconds % 60).toString().padStart(2, '0');
+            stopwatchDisplay.textContent = `${hours}:${minutes}:${seconds}`;
         };
-        const startPauseTimer = () => {
-            if (timerSeconds <= 0 && !isTimerRunning) return;
-            if (isTimerRunning) {
-                clearInterval(timerInterval);
-                isTimerRunning = false;
-                startPauseBtn.textContent = 'Resume';
-                startPauseBtn.classList.replace('bg-yellow-500', 'bg-green-500');
+        const startPauseStopwatch = () => {
+            if (isStopwatchRunning) {
+                clearInterval(stopwatchInterval);
+                isStopwatchRunning = false;
+                startPauseStopwatchBtn.textContent = 'RESUME';
             } else {
-                isTimerRunning = true;
-                startPauseBtn.textContent = 'Pause';
-                startPauseBtn.classList.replace('bg-green-500', 'bg-yellow-500');
-                timerInterval = setInterval(() => {
-                    timerSeconds--;
-                    updateTimerDisplay();
-                    if (timerSeconds <= 0) {
-                        clearInterval(timerInterval);
-                        if (soundEnabled) sounds.timerDone.play();
-                        timerDisplay.classList.add('timer-flash');
-                        setTimeout(() => timerDisplay.classList.remove('timer-flash'), 3000);
-                        resetTimer();
-                    }
+                isStopwatchRunning = true;
+                startPauseStopwatchBtn.textContent = 'PAUSE';
+                stopwatchInterval = setInterval(() => {
+                    stopwatchSeconds++;
+                    updateStopwatchDisplay();
                 }, 1000);
             }
         };
-        const resetTimer = () => {
-            clearInterval(timerInterval);
-            isTimerRunning = false;
-            timerSeconds = 0;
-            minutesInput.value = '';
-            updateTimerDisplay();
-            startPauseBtn.textContent = 'Start';
-            startPauseBtn.classList.replace('bg-yellow-500', 'bg-green-500');
+        const resetStopwatch = () => {
+            clearInterval(stopwatchInterval);
+            isStopwatchRunning = false;
+            stopwatchSeconds = 0;
+            updateStopwatchDisplay();
+            startPauseStopwatchBtn.textContent = 'START';
         };
-        setTimeBtn.addEventListener('click', () => {
-            const mins = parseInt(minutesInput.value);
-            if (!isNaN(mins) && mins > 0) {
-                resetTimer();
-                timerSeconds = mins * 60;
-                updateTimerDisplay();
-            }
-        });
-        startPauseBtn.addEventListener('click', startPauseTimer);
-        resetBtn.addEventListener('click', resetTimer);
+        startPauseStopwatchBtn.addEventListener('click', startPauseStopwatch);
+        resetStopwatchBtn.addEventListener('click', resetStopwatch);
 
         // --- Calendar Logic ---
         const renderCalendar = () => {
@@ -598,7 +509,6 @@
             const month = currentCalendarDate.getMonth();
             const year = currentCalendarDate.getFullYear();
             calendarHeader.textContent = `${currentCalendarDate.toLocaleString('default', { month: 'long' })} ${year}`;
-
             const firstDayOfMonth = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const completionsByDate = {};
@@ -608,7 +518,6 @@
                     completionsByDate[dateStr] = (completionsByDate[dateStr] || 0) + 1;
                 }
             });
-
             const dayHeaders = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
             dayHeaders.forEach(day => {
                 const dayEl = document.createElement('div');
@@ -616,137 +525,111 @@
                 dayEl.textContent = day;
                 calendarGrid.appendChild(dayEl);
             });
-
-            for (let i = 0; i < firstDayOfMonth; i++) {
-                calendarGrid.appendChild(document.createElement('div'));
-            }
-
+            for (let i = 0; i < firstDayOfMonth; i++) { calendarGrid.appendChild(document.createElement('div')); }
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayEl = document.createElement('div');
                 dayEl.textContent = day;
-                dayEl.className = 'p-1 rounded-md calendar-day';
-                
                 const dateStr = new Date(year, month, day).toISOString().split('T')[0];
+                dayEl.className = `p-1 calendar-day cursor-pointer`;
                 const todayStr = new Date().toISOString().split('T')[0];
-                if(dateStr === todayStr) {
-                    dayEl.classList.add('today');
-                }
-
+                if(dateStr === todayStr) { dayEl.classList.add('today'); }
+                if(bookmarkedDate === dateStr) { dayEl.classList.add('bookmarked'); }
                 const count = completionsByDate[dateStr] || 0;
                 let level = 0;
                 if (count > 0) level = 1; if (count > 2) level = 2; if (count > 5) level = 3; if (count > 8) level = 4;
-                if (level > 0) {
-                    dayEl.style.backgroundColor = `rgba(34, 197, 94, ${level * 0.25})`;
-                }
+                if (level > 0) { dayEl.style.backgroundColor = `rgba(16, 185, 129, ${level * 0.25})`; }
                 dayEl.title = `${count} tasks on ${new Date(year, month, day).toDateString()}`;
+                dayEl.addEventListener('click', () => {
+                    bookmarkedDate = dateStr;
+                    renderCalendar();
+                });
                 calendarGrid.appendChild(dayEl);
             }
         };
-        prevMonthBtn.addEventListener('click', () => {
-            currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
-            renderCalendar();
-        });
-        nextMonthBtn.addEventListener('click', () => {
-            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
-            renderCalendar();
-        });
+        prevMonthBtn.addEventListener('click', () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1); renderCalendar(); });
+        nextMonthBtn.addEventListener('click', () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1); renderCalendar(); });
+        todayBtn.addEventListener('click', () => { currentCalendarDate = new Date(); bookmarkedDate = null; renderCalendar(); });
 
         // --- Modal Logic ---
+        const showModal = (content) => {
+            modalContent.innerHTML = content;
+            modalContainer.classList.remove('hidden');
+        };
+        const closeModal = () => modalContainer.classList.add('hidden');
+
         const openNotesModal = (id) => {
-            const task = allTasks.find(t => t.id === id);
-            if (!task) return;
-            modalTaskId.value = id;
-            modalNotes.value = task.notes || '';
+            const task = allTasks.find(t => t.id === id); if (!task) return;
+            const content = `
+                <h3 class="text-xl font-bold mb-4">EDIT DETAILS</h3>
+                <input type="hidden" id="modal-task-id" value="${id}">
+                <div><label for="modal-notes" class="block text-sm font-medium">NOTES</label><textarea id="modal-notes" rows="4" class="mt-1 block w-full rounded-md shadow-sm surface border text-muted">${task.notes || ''}</textarea></div>
+                <div class="mt-4"><label class="block text-sm font-medium">ATTACHMENTS</label><div id="modal-attachments-list" class="space-y-2 mt-2"></div><div class="flex gap-2 mt-2"><input type="url" id="new-attachment-input" placeholder="https://example.com" class="flex-grow rounded-md shadow-sm surface border text-muted"><button id="add-attachment-btn" class="px-3 py-1 rounded-md retro-btn secondary">ADD</button></div></div>
+                <div class="mt-6 flex justify-end gap-3"><button id="modal-cancel-btn" class="px-4 py-2 rounded-lg retro-btn secondary">CANCEL</button><button id="modal-save-btn" class="px-4 py-2 rounded-lg retro-btn">SAVE</button></div>
+            `;
+            showModal(content);
             renderAttachments(task.attachments || []);
-            notesModal.classList.remove('hidden');
+            document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+            document.getElementById('modal-save-btn').addEventListener('click', () => {
+                const notes = document.getElementById('modal-notes').value;
+                const attachments = Array.from(document.getElementById('modal-attachments-list').querySelectorAll('a')).map(a => ({ url: a.href }));
+                updateTask(id, { notes, attachments });
+                closeModal();
+            });
+            document.getElementById('add-attachment-btn').addEventListener('click', () => {
+                const input = document.getElementById('new-attachment-input');
+                if (input.value.trim() === '') return;
+                const currentAttachments = Array.from(document.getElementById('modal-attachments-list').querySelectorAll('a')).map(a => ({ url: a.href }));
+                currentAttachments.push({ url: input.value });
+                renderAttachments(currentAttachments);
+                input.value = '';
+            });
         };
+        
         const openBulkAddModal = (parentId) => {
-            bulkAddParentId.value = parentId; // Can be null for global add
-            bulkAddTitle.textContent = parentId ? 'Bulk Add to Subject' : 'Bulk Add New Subjects';
-            bulkAddTextarea.value = '';
-            bulkAddModal.classList.remove('hidden');
-        };
-        const closeNotesModal = () => notesModal.classList.add('hidden');
-        const closeBulkAddModal = () => bulkAddModal.classList.add('hidden');
-
-        const renderAttachments = (attachments) => {
-            modalAttachmentsList.innerHTML = '';
-            attachments.forEach((att) => {
-                const el = document.createElement('div');
-                el.className = 'flex items-center gap-2 bg-gray-100 p-1 rounded';
-                el.innerHTML = `<a href="${att.url}" target="_blank" class="text-blue-600 truncate flex-grow">${att.url}</a> <button class="remove-attachment-btn text-red-500 text-xs">Remove</button>`;
-                modalAttachmentsList.appendChild(el);
-            });
-        };
-        addAttachmentBtn.addEventListener('click', () => {
-            if (newAttachmentInput.value.trim() === '') return;
-            const currentAttachments = Array.from(modalAttachmentsList.querySelectorAll('a')).map(a => ({ url: a.href }));
-            currentAttachments.push({ url: newAttachmentInput.value });
-            renderAttachments(currentAttachments);
-            newAttachmentInput.value = '';
-        });
-        modalAttachmentsList.addEventListener('click', (e) => {
-            if (e.target.closest('.remove-attachment-btn')) {
-                e.target.closest('.flex').remove();
-            }
-        });
-        modalSaveBtn.addEventListener('click', () => {
-            const id = modalTaskId.value;
-            const notes = modalNotes.value;
-            const attachments = Array.from(modalAttachmentsList.querySelectorAll('a')).map(a => ({ url: a.href }));
-            updateTask(id, { notes, attachments });
-            closeNotesModal();
-        });
-        bulkAddSaveBtn.addEventListener('click', () => {
-            const parentId = bulkAddParentId.value || null;
-            const text = bulkAddTextarea.value;
             const parentTask = parentId ? allTasks.find(t => t.id === parentId) : null;
-            const startingLevel = parentTask ? parentTask.level + 1 : 0;
-            
-            const lines = text.split('\n').filter(l => l.trim() !== '');
-            const user = auth.currentUser;
-            const batch = writeBatch(db);
-            const tasksRef = collection(db, 'users', user.uid, 'tasks');
-            
-            let lastParentIds = { [startingLevel - 1]: parentId };
-
-            lines.forEach(line => {
-                const indentation = line.match(/^\s*/)[0].length;
-                const level = startingLevel + Math.floor(indentation / 2);
-                const text = line.trim();
-
-                if (level < HIERARCHY.length) {
-                    const currentParentId = lastParentIds[level - 1];
-                    if (currentParentId === undefined) { console.error("Error finding parent for:", text); return; }
-                    const newDocRef = doc(tasksRef);
-                    batch.set(newDocRef, {
-                        text, parentId: currentParentId, level, completed: false, isFlagged: false, isCollapsed: false, notes: '', attachments: [], createdAt: serverTimestamp()
-                    });
-                    lastParentIds[level] = newDocRef.id;
-                }
+            const title = parentId ? 'BULK ADD TO SUBJECT' : 'BULK ADD NEW SUBJECTS';
+            const content = `
+                <h3 class="text-xl font-bold mb-4">${title}</h3>
+                <input type="hidden" id="bulk-add-parent-id" value="${parentId || ''}">
+                <p class="text-sm text-muted mb-2">USE ONE LINE PER NEW ITEM. INDENT TO CREATE CHILDREN.</p>
+                <textarea id="bulk-add-textarea" rows="8" class="mt-1 block w-full shadow-sm font-mono surface border text-muted" placeholder="Subject\n  Section\n    Chapter\n      Topic"></textarea>
+                <div class="mt-6 flex justify-end gap-3"><button id="bulk-add-cancel-btn" class="px-4 py-2 retro-btn secondary">CANCEL</button><button id="bulk-add-save-btn" class="px-4 py-2 retro-btn">ADD ITEMS</button></div>
+            `;
+            showModal(content);
+            document.getElementById('bulk-add-cancel-btn').addEventListener('click', closeModal);
+            document.getElementById('bulk-add-save-btn').addEventListener('click', () => {
+                const text = document.getElementById('bulk-add-textarea').value;
+                const startingLevel = parentTask ? parentTask.level + 1 : 0;
+                const lines = text.split('\n').filter(l => l.trim() !== '');
+                const user = auth.currentUser;
+                const batch = writeBatch(db);
+                const tasksRef = collection(db, 'users', user.uid, 'tasks');
+                let lastParentIds = { [startingLevel - 1]: parentId };
+                lines.forEach(line => {
+                    const indentation = line.match(/^\s*/)[0].length;
+                    const level = startingLevel + Math.floor(indentation / 2);
+                    const text = line.trim();
+                    if (level < HIERARCHY.length) {
+                        const currentParentId = lastParentIds[level - 1];
+                        if (currentParentId === undefined) { console.error("Error finding parent for:", text); return; }
+                        const newDocRef = doc(tasksRef);
+                        batch.set(newDocRef, { text, parentId: currentParentId, level, completed: false, isFlagged: false, isCollapsed: false, notes: '', attachments: [], createdAt: serverTimestamp() });
+                        lastParentIds[level] = newDocRef.id;
+                    }
+                });
+                batch.commit();
+                closeModal();
             });
-            batch.commit();
-            closeBulkAddModal();
-        });
-
-        modalCancelBtn.addEventListener('click', closeNotesModal);
-        bulkAddCancelBtn.addEventListener('click', closeBulkAddModal);
-        globalBulkAddBtn.addEventListener('click', () => openBulkAddModal(null));
-
+        };
 
         // --- General Event Listeners ---
         signOutBtn.addEventListener('click', () => signOut(auth));
-        themeSelector.addEventListener('click', (e) => {
-            const themeBtn = e.target.closest('.theme-btn');
-            if (themeBtn) {
-                saveTheme(themeBtn.dataset.theme);
-            }
+        themeSwitcher.addEventListener('click', (e) => {
+            const themeBtn = e.target.closest('.theme-switcher-btn');
+            if (themeBtn) { saveTheme(themeBtn.dataset.theme); }
         });
-        soundToggle.addEventListener('click', () => {
-            soundEnabled = !soundEnabled;
-            soundToggle.innerHTML = soundEnabled ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-off"></i>';
-        });
-
+        globalBulkAddBtn.addEventListener('click', () => openBulkAddModal(null));
+        
     </script>
 </body>
 </html>
