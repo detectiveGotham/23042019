@@ -27,16 +27,25 @@
         .flagged-task {
             background-color: #fef9c3 !important; /* yellow-100 */
         }
-        /* Hide scrollbar but allow scrolling */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Styles for the modal */
-        .modal {
-            transition: opacity 0.25s ease;
+        .modal { transition: opacity 0.25s ease; }
+        .modal-content { transition: transform 0.25s ease; }
+        
+        /* Custom checkbox icons */
+        .checkbox-icon {
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            display: inline-block;
+            width: 1.25rem;
+            text-align: center;
+            cursor: pointer;
         }
-        .modal-content {
-            transition: transform 0.25s ease;
+        .collapse-icon {
+            transition: transform 0.2s ease-in-out;
+        }
+        .collapsed .collapse-icon {
+            transform: rotate(-90deg);
         }
     </style>
 </head>
@@ -53,15 +62,32 @@
 
     <!-- Main Logged In View -->
     <div id="logged-in-view" class="hidden p-4 md:p-8">
-        <header class="flex justify-between items-center mb-8">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <h1 class="text-4xl font-extrabold text-gray-800">Productivity Hub</h1>
-            <button id="sign-out-btn" class="text-sm font-medium text-gray-600 hover:text-indigo-600 theme-transition">Sign Out <i class="fas fa-sign-out-alt ml-1"></i></button>
+            <div class="flex items-center gap-4 w-full md:w-auto">
+                 <div class="relative w-full md:w-64">
+                    <input type="text" id="search-input" placeholder="Search tasks..." class="w-full pl-10 pr-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <button id="sign-out-btn" class="text-sm font-medium text-gray-600 hover:text-indigo-600 theme-transition flex-shrink-0">Sign Out <i class="fas fa-sign-out-alt ml-1"></i></button>
+            </div>
         </header>
 
         <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Main Content: Checklist -->
             <div class="lg:col-span-2 space-y-6">
-                <!-- Bulk Add Card -->
+                <!-- Checklist Card -->
+                <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
+                    <h2 class="text-xl font-bold mb-4">My Master Checklist</h2>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                        <div id="progress-bar" class="bg-green-500 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <div id="task-list-container" class="space-y-1 max-h-[60vh] overflow-y-auto no-scrollbar">
+                        <p id="loading-placeholder" class="text-gray-500">Loading your tasks...</p>
+                    </div>
+                </div>
+
+                <!-- Bulk Add Card (Moved to bottom) -->
                 <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
                     <h2 class="text-xl font-bold mb-4">Bulk Add Subjects</h2>
                     <form id="bulk-add-form">
@@ -69,28 +95,26 @@
                         <button type="submit" class="mt-3 w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700">Add Subjects</button>
                     </form>
                 </div>
-
-                <!-- Checklist Card -->
-                <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
-                    <h2 class="text-xl font-bold mb-4">My Master Checklist</h2>
-                    <!-- Progress Bar -->
-                    <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
-                        <div id="progress-bar" class="bg-green-500 h-2.5 rounded-full" style="width: 0%"></div>
-                    </div>
-                    <div id="task-list-container" class="space-y-2 max-h-[60vh] overflow-y-auto no-scrollbar">
-                        <p id="loading-placeholder" class="text-gray-500">Loading your tasks...</p>
-                    </div>
-                </div>
             </div>
 
-            <!-- Sidebar: Widgets (Static Placeholders) -->
+            <!-- Sidebar: Widgets -->
             <div class="space-y-6">
-                <!-- Static widgets remain the same -->
-                 <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
+                <!-- Timer Card -->
+                <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
                     <h2 class="text-xl font-bold mb-4">Focus Mode</h2>
-                    <div class="text-center"><p class="text-5xl font-mono font-bold text-gray-800">24:15</p><p class="text-sm text-gray-500">Stopwatch Session</p></div>
-                    <div class="mt-6 text-center"><h3 class="font-bold mb-2">Achievements</h3><div class="flex justify-center gap-4 text-2xl"><i class="fas fa-star text-yellow-400"></i><i class="fas fa-check-double text-green-500"></i><i class="fas fa-brain text-blue-500"></i></div></div>
+                    <div class="text-center">
+                        <p id="timer-display" class="text-5xl font-mono font-bold text-gray-800">00:00</p>
+                    </div>
+                    <div class="flex items-center gap-2 mt-4">
+                        <input type="number" id="minutes-input" placeholder="Mins" min="0" class="w-full p-2 border rounded-lg text-center">
+                        <button id="set-time-btn" class="px-4 py-2 bg-gray-200 rounded-lg">Set</button>
+                    </div>
+                    <div class="flex justify-center gap-2 mt-4">
+                        <button id="start-pause-btn" class="px-4 py-2 bg-green-500 text-white rounded-lg w-24">Start</button>
+                        <button id="reset-btn" class="px-4 py-2 bg-gray-500 text-white rounded-lg">Reset</button>
+                    </div>
                 </div>
+                <!-- Other static widgets -->
                 <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
                     <h2 class="text-xl font-bold mb-4">Productivity Calendar</h2>
                     <div class="grid grid-cols-7 gap-1 text-center text-xs">
@@ -105,30 +129,16 @@
         </main>
     </div>
     
-    <!-- Notes & Attachments Modal -->
+    <!-- Notes Modal -->
     <div id="notes-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
         <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-lg p-6 transform -translate-y-10">
             <h3 class="text-xl font-bold mb-4">Edit Details</h3>
             <input type="hidden" id="modal-task-id">
-            <div>
-                <label for="modal-notes" class="block text-sm font-medium text-gray-700">Notes</label>
-                <textarea id="modal-notes" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
-            </div>
-            <div class="mt-4">
-                <label for="modal-attachments" class="block text-sm font-medium text-gray-700">Attachments (Links)</label>
-                <div id="modal-attachments-list" class="space-y-2 mt-2"></div>
-                <div class="flex gap-2 mt-2">
-                    <input type="url" id="new-attachment-input" placeholder="https://example.com" class="flex-grow rounded-md border-gray-300 shadow-sm">
-                    <button id="add-attachment-btn" class="px-3 py-1 bg-gray-200 rounded-md">Add</button>
-                </div>
-            </div>
-            <div class="mt-6 flex justify-end gap-3">
-                <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 rounded-lg">Cancel</button>
-                <button id="modal-save-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Save</button>
-            </div>
+            <div><label for="modal-notes" class="block text-sm font-medium text-gray-700">Notes</label><textarea id="modal-notes" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea></div>
+            <div class="mt-4"><label for="modal-attachments" class="block text-sm font-medium text-gray-700">Attachments (Links)</label><div id="modal-attachments-list" class="space-y-2 mt-2"></div><div class="flex gap-2 mt-2"><input type="url" id="new-attachment-input" placeholder="https://example.com" class="flex-grow rounded-md border-gray-300 shadow-sm"><button id="add-attachment-btn" class="px-3 py-1 bg-gray-200 rounded-md">Add</button></div></div>
+            <div class="mt-6 flex justify-end gap-3"><button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 rounded-lg">Cancel</button><button id="modal-save-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Save</button></div>
         </div>
     </div>
-
 
     <!-- Firebase SDKs -->
     <script type="module">
@@ -150,14 +160,22 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // UI Elements
+        // --- UI & State Variables ---
         const loggedInView = document.getElementById('logged-in-view');
         const loggedOutView = document.getElementById('logged-out-view');
         const signOutBtn = document.getElementById('sign-out-btn');
+        const searchInput = document.getElementById('search-input');
         const bulkAddForm = document.getElementById('bulk-add-form');
         const bulkTaskInput = document.getElementById('bulk-task-input');
         const taskListContainer = document.getElementById('task-list-container');
         const progressBar = document.getElementById('progress-bar');
+        
+        // Timer Elements
+        const timerDisplay = document.getElementById('timer-display');
+        const minutesInput = document.getElementById('minutes-input');
+        const setTimeBtn = document.getElementById('set-time-btn');
+        const startPauseBtn = document.getElementById('start-pause-btn');
+        const resetBtn = document.getElementById('reset-btn');
         
         // Modal Elements
         const notesModal = document.getElementById('notes-modal');
@@ -169,10 +187,14 @@
         const modalSaveBtn = document.getElementById('modal-save-btn');
         const modalCancelBtn = document.getElementById('modal-cancel-btn');
 
-
         let tasksUnsubscribe = null;
-        let allTasks = []; // Local cache of all tasks
+        let allTasks = [];
+        const HIERARCHY = ['Subject', 'Section', 'Chapter', 'Topic'];
 
+        let timerInterval = null;
+        let timerSeconds = 0;
+        let isTimerRunning = false;
+        
         // --- Auth State ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -183,148 +205,115 @@
                 loggedInView.classList.add('hidden');
                 loggedOutView.classList.remove('hidden');
                 if (tasksUnsubscribe) tasksUnsubscribe();
+                clearInterval(timerInterval); // Stop timer on logout
             }
         });
 
         // --- Data Handling & Rendering ---
-
-        // Fetch tasks and build the nested structure
         const getTasks = (userId) => {
-            const tasksCollectionRef = collection(db, 'users', userId, 'tasks');
-            const q = query(tasksCollectionRef);
-
+            const q = query(collection(db, 'users', userId, 'tasks'));
             tasksUnsubscribe = onSnapshot(q, (snapshot) => {
                 allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                const taskTree = buildTree(allTasks);
-                renderTaskTree(taskTree);
+                renderTaskTree(buildTree(allTasks));
                 updateProgressBar();
             });
         };
 
-        // Helper to build a tree from a flat array of tasks
-        const buildTree = (tasks) => {
-            const map = {};
-            const roots = [];
-            tasks.forEach(task => {
-                map[task.id] = { ...task, children: [] };
-            });
-            tasks.forEach(task => {
-                if (task.parentId) {
-                    map[task.parentId]?.children.push(map[task.id]);
-                } else {
-                    roots.push(map[task.id]);
-                }
-            });
-            return roots;
+        const buildTree = (tasks, parentId = null) => {
+            return tasks
+                .filter(task => task.parentId === parentId)
+                .map(task => ({ ...task, children: buildTree(tasks, task.id) }));
         };
 
-        // Main function to kick off rendering
         const renderTaskTree = (taskTree) => {
             taskListContainer.innerHTML = '';
             if (taskTree.length === 0) {
-                taskListContainer.innerHTML = '<p class="text-gray-500">No tasks yet. Add a subject above!</p>';
+                taskListContainer.innerHTML = '<p class="text-gray-500">No subjects yet. Add one below!</p>';
                 return;
             }
             taskTree.forEach(taskNode => renderTask(taskNode, 0));
         };
 
-        // Recursive function to render a task and its children
         const renderTask = (taskNode, level) => {
             const taskEl = document.createElement('div');
             taskEl.setAttribute('data-id', taskNode.id);
-            taskEl.className = `task-item group p-2 rounded-lg flex items-center gap-2 ${taskNode.isFlagged ? 'flagged-task' : 'bg-gray-50'}`;
-            taskEl.style.marginLeft = `${level * 2}rem`;
+            taskEl.className = `task-item-container ${taskNode.isCollapsed ? 'collapsed' : ''}`;
+            
+            const hasChildren = taskNode.children && taskNode.children.length > 0;
+            const isMaxDepth = level >= HIERARCHY.length - 1;
 
-            const checkedAttr = taskNode.completed ? 'checked' : '';
-            const completedClass = taskNode.completed ? 'completed-task' : '';
-            const flagClass = taskNode.isFlagged ? 'text-yellow-500' : 'text-gray-400';
+            const checkboxIcons = [
+                { unchecked: 'fa-regular fa-square', checked: 'fa-solid fa-square-check' }, // Subject
+                { unchecked: 'fa-regular fa-circle', checked: 'fa-solid fa-circle-check' }, // Section
+                { unchecked: 'fa-solid fa-diamond', checked: 'fa-solid fa-check-to-slot' }, // Chapter
+                { unchecked: 'fa-regular fa-square-check', checked: 'fa-solid fa-square-check text-green-500' } // Topic
+            ];
+            const iconSet = checkboxIcons[level];
+            const checkboxIconClass = taskNode.completed ? iconSet.checked : iconSet.unchecked;
             
             taskEl.innerHTML = `
-                <input type="checkbox" class="task-checkbox h-5 w-5 rounded text-indigo-600 flex-shrink-0" ${checkedAttr}>
-                <span class="flex-grow font-medium text-gray-800 ${completedClass}" contenteditable="true" spellcheck="false">${taskNode.text}</span>
-                <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button title="Add Sub-task" class="add-subtask-btn text-gray-400 hover:text-green-500"><i class="fas fa-plus-circle"></i></button>
-                    <button title="Flag" class="flag-btn ${flagClass} hover:text-yellow-500"><i class="far fa-flag"></i></button>
-                    <button title="Notes & Attachments" class="notes-btn text-gray-400 hover:text-blue-500"><i class="far fa-sticky-note"></i></button>
-                    <button title="Delete" class="delete-btn text-gray-400 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                <div class="task-item group p-2 rounded-lg flex items-center gap-2 ${taskNode.isFlagged ? 'flagged-task' : 'bg-gray-50'}">
+                    <i class="collapse-icon fa-solid fa-chevron-down w-4 text-center text-gray-400 ${hasChildren ? '' : 'invisible'}"></i>
+                    <i class="checkbox-icon ${checkboxIconClass} text-indigo-600"></i>
+                    <span class="flex-grow font-medium text-gray-800 ${taskNode.completed ? 'completed-task' : ''}" contenteditable="true" spellcheck="false">${taskNode.text}</span>
+                    <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button title="Add ${isMaxDepth ? '' : HIERARCHY[level+1]}" class="add-subtask-btn text-gray-400 hover:text-green-500 ${isMaxDepth ? 'hidden' : ''}"><i class="fas fa-plus-circle"></i></button>
+                        <button title="Flag" class="flag-btn text-gray-400 hover:text-yellow-500 ${taskNode.isFlagged ? 'text-yellow-500' : ''}"><i class="fas fa-flag"></i></button>
+                        <button title="Notes" class="notes-btn text-gray-400 hover:text-blue-500"><i class="far fa-sticky-note"></i></button>
+                        <button title="Delete" class="delete-btn text-gray-400 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                    </div>
                 </div>
+                <div class="children-container pl-6"></div>
             `;
-
             taskListContainer.appendChild(taskEl);
 
-            // Add event listeners for this task
+            // --- Add Event Listeners ---
             const span = taskEl.querySelector('span');
-            span.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    span.blur();
-                }
-            });
+            span.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); span.blur(); } });
             span.addEventListener('blur', () => updateTaskText(taskNode.id, span.textContent));
-
-            taskEl.querySelector('.task-checkbox').addEventListener('change', (e) => toggleTaskComplete(taskNode.id, e.target.checked));
-            taskEl.querySelector('.add-subtask-btn').addEventListener('click', () => addTask(null, taskNode.id));
+            taskEl.querySelector('.collapse-icon').addEventListener('click', () => toggleCollapse(taskNode.id, !taskNode.isCollapsed));
+            taskEl.querySelector('.checkbox-icon').addEventListener('click', () => toggleTaskComplete(taskNode.id, !taskNode.completed));
+            taskEl.querySelector('.add-subtask-btn').addEventListener('click', () => addTask(HIERARCHY[level + 1], taskNode.id, level + 1));
             taskEl.querySelector('.flag-btn').addEventListener('click', () => toggleFlag(taskNode.id, !taskNode.isFlagged));
             taskEl.querySelector('.notes-btn').addEventListener('click', () => openNotesModal(taskNode.id));
             taskEl.querySelector('.delete-btn').addEventListener('click', () => deleteTaskWithChildren(taskNode.id));
 
-
-            // Recursively render children
-            if (taskNode.children && taskNode.children.length > 0) {
-                taskNode.children.forEach(childNode => renderTask(childNode, level + 1));
+            // --- Render Children ---
+            if (hasChildren && !taskNode.isCollapsed) {
+                const childrenContainer = taskEl.querySelector('.children-container');
+                taskNode.children.forEach(childNode => {
+                    const childEl = renderTask(childNode, level + 1);
+                    childrenContainer.appendChild(childEl);
+                });
             }
+            return taskEl; // Return element for recursive appending
         };
         
         const updateProgressBar = () => {
-            const totalTasks = allTasks.length;
-            if (totalTasks === 0) {
-                progressBar.style.width = '0%';
-                return;
-            }
+            if (allTasks.length === 0) { progressBar.style.width = '0%'; return; }
             const completedTasks = allTasks.filter(t => t.completed).length;
-            const percentage = (completedTasks / totalTasks) * 100;
-            progressBar.style.width = `${percentage}%`;
+            progressBar.style.width = `${(completedTasks / allTasks.length) * 100}%`;
         };
 
         // --- Firestore Actions ---
-
-        // Generic function to add a task
-        const addTask = (text, parentId = null) => {
+        const addTask = (text, parentId = null, level = 0) => {
             const user = auth.currentUser;
             if (!user) return;
             addDoc(collection(db, 'users', user.uid, 'tasks'), {
-                text: text || 'New Task',
-                parentId: parentId,
-                completed: false,
-                isFlagged: false,
-                notes: '',
-                attachments: [],
-                createdAt: new Date()
+                text: `New ${text}`, parentId, level, completed: false, isFlagged: false, isCollapsed: false, notes: '', attachments: []
             });
         };
 
-        // Bulk add from textarea
-        bulkAddForm.addEventListener('submit', (e) => {
+        bulkAddForm.addEventListener('submit', e => {
             e.preventDefault();
             const lines = bulkTaskInput.value.split('\n').filter(line => line.trim() !== '');
             if (lines.length === 0) return;
-
             const user = auth.currentUser;
             if (!user) return;
-
             const batch = writeBatch(db);
-            const tasksCollectionRef = collection(db, 'users', user.uid, 'tasks');
+            const tasksRef = collection(db, 'users', user.uid, 'tasks');
             lines.forEach(line => {
-                const newDocRef = doc(tasksCollectionRef);
-                batch.set(newDocRef, {
-                    text: line,
-                    parentId: null,
-                    completed: false,
-                    isFlagged: false,
-                    notes: '',
-                    attachments: [],
-                    createdAt: new Date()
-                });
+                batch.set(doc(tasksRef), { text: line, parentId: null, level: 0, completed: false, isFlagged: false, isCollapsed: false, notes: '', attachments: [] });
             });
             batch.commit();
             bulkTaskInput.value = '';
@@ -333,32 +322,99 @@
         const updateTaskText = (id, text) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { text });
         const toggleTaskComplete = (id, completed) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { completed });
         const toggleFlag = (id, isFlagged) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { isFlagged });
+        const toggleCollapse = (id, isCollapsed) => updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { isCollapsed });
 
-        // Delete a task and all its descendants
         const deleteTaskWithChildren = (taskId) => {
             const user = auth.currentUser;
             if (!user) return;
-            
-            const childrenIds = getDescendantIds(taskId);
-            const idsToDelete = [taskId, ...childrenIds];
-
+            const getDescendantIds = (parentId, tasks) => {
+                let descendants = [];
+                const children = tasks.filter(task => task.parentId === parentId);
+                children.forEach(child => {
+                    descendants.push(child.id);
+                    descendants = descendants.concat(getDescendantIds(child.id, tasks));
+                });
+                return descendants;
+            };
+            const idsToDelete = [taskId, ...getDescendantIds(taskId, allTasks)];
             const batch = writeBatch(db);
-            idsToDelete.forEach(id => {
-                const docRef = doc(db, 'users', user.uid, 'tasks', id);
-                batch.delete(docRef);
-            });
+            idsToDelete.forEach(id => batch.delete(doc(db, 'users', user.uid, 'tasks', id)));
             batch.commit();
         };
 
-        const getDescendantIds = (parentId) => {
-            let descendants = [];
-            const children = allTasks.filter(task => task.parentId === parentId);
-            children.forEach(child => {
-                descendants.push(child.id);
-                descendants = descendants.concat(getDescendantIds(child.id));
+        // --- Search Logic ---
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            if (!searchTerm) {
+                renderTaskTree(buildTree(allTasks)); // Re-render full tree
+                return;
+            }
+            const matchingIds = new Set();
+            const taskMap = new Map(allTasks.map(task => [task.id, task]));
+
+            allTasks.forEach(task => {
+                if (task.text.toLowerCase().includes(searchTerm)) {
+                    let current = task;
+                    while(current) {
+                        matchingIds.add(current.id);
+                        current = current.parentId ? taskMap.get(current.parentId) : null;
+                    }
+                }
             });
-            return descendants;
+            const filteredTasks = allTasks.filter(task => matchingIds.has(task.id));
+            renderTaskTree(buildTree(filteredTasks));
+        });
+
+        // --- Timer Logic ---
+        const updateTimerDisplay = () => {
+            const minutes = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+            const seconds = (timerSeconds % 60).toString().padStart(2, '0');
+            timerDisplay.textContent = `${minutes}:${seconds}`;
         };
+
+        const startPauseTimer = () => {
+            if (isTimerRunning) { // Pause
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                startPauseBtn.textContent = 'Resume';
+                startPauseBtn.classList.replace('bg-yellow-500', 'bg-green-500');
+            } else { // Start or Resume
+                isTimerRunning = true;
+                startPauseBtn.textContent = 'Pause';
+                startPauseBtn.classList.replace('bg-green-500', 'bg-yellow-500');
+                timerInterval = setInterval(() => {
+                    timerSeconds--;
+                    updateTimerDisplay();
+                    if (timerSeconds <= 0) {
+                        clearInterval(timerInterval);
+                        alert("Time's up!");
+                        resetTimer();
+                    }
+                }, 1000);
+            }
+        };
+
+        const resetTimer = () => {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timerSeconds = 0;
+            minutesInput.value = '';
+            updateTimerDisplay();
+            startPauseBtn.textContent = 'Start';
+            startPauseBtn.classList.replace('bg-yellow-500', 'bg-green-500');
+        };
+
+        setTimeBtn.addEventListener('click', () => {
+            const mins = parseInt(minutesInput.value);
+            if (!isNaN(mins) && mins > 0) {
+                resetTimer();
+                timerSeconds = mins * 60;
+                updateTimerDisplay();
+            }
+        });
+        startPauseBtn.addEventListener('click', startPauseTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
 
         // --- Modal Logic ---
         const openNotesModal = (id) => {
@@ -369,19 +425,16 @@
             renderAttachments(task.attachments || []);
             notesModal.classList.remove('hidden');
         };
-
         const closeNotesModal = () => notesModal.classList.add('hidden');
-        
         const renderAttachments = (attachments) => {
             modalAttachmentsList.innerHTML = '';
-            attachments.forEach((att, index) => {
+            attachments.forEach((att) => {
                 const el = document.createElement('div');
                 el.className = 'flex items-center gap-2 bg-gray-100 p-1 rounded';
-                el.innerHTML = `<a href="${att.url}" target="_blank" class="text-blue-600 truncate flex-grow">${att.url}</a> <button data-index="${index}" class="remove-attachment-btn text-red-500 text-xs">Remove</button>`;
+                el.innerHTML = `<a href="${att.url}" target="_blank" class="text-blue-600 truncate flex-grow">${att.url}</a> <button class="remove-attachment-btn text-red-500 text-xs">Remove</button>`;
                 modalAttachmentsList.appendChild(el);
             });
         };
-        
         addAttachmentBtn.addEventListener('click', () => {
             if (newAttachmentInput.value.trim() === '') return;
             const currentAttachments = Array.from(modalAttachmentsList.querySelectorAll('a')).map(a => ({ url: a.href }));
@@ -389,16 +442,11 @@
             renderAttachments(currentAttachments);
             newAttachmentInput.value = '';
         });
-
         modalAttachmentsList.addEventListener('click', (e) => {
-            if (e.target.classList.contains('remove-attachment-btn')) {
-                const indexToRemove = parseInt(e.target.dataset.index);
-                const currentAttachments = Array.from(modalAttachmentsList.querySelectorAll('a')).map(a => ({ url: a.href }));
-                const newAttachments = currentAttachments.filter((_, index) => index !== indexToRemove);
-                renderAttachments(newAttachments);
+            if (e.target.closest('.remove-attachment-btn')) {
+                e.target.closest('.flex').remove();
             }
         });
-
         modalSaveBtn.addEventListener('click', () => {
             const id = modalTaskId.value;
             const notes = modalNotes.value;
@@ -406,7 +454,6 @@
             updateDoc(doc(db, 'users', auth.currentUser.uid, 'tasks', id), { notes, attachments });
             closeNotesModal();
         });
-
         modalCancelBtn.addEventListener('click', closeNotesModal);
 
         // --- General Event Listeners ---
