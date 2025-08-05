@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Checklist</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Style for completed tasks */
+        .completed {
+            text-decoration: line-through;
+            color: #9ca3af; /* gray-400 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="container mx-auto max-w-2xl mt-12 px-4">
+        
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-4xl font-bold text-gray-800">My Checklist</h1>
+            <a href="index.html" class="text-sm text-indigo-600 hover:underline">&larr; Back to Login</a>
+        </div>
+
+        <!-- This section shows when the user is not logged in -->
+        <div id="logged-out-view" class="hidden text-center bg-white p-8 rounded-xl shadow-lg">
+            <h2 class="text-2xl font-semibold mb-4">Please Log In</h2>
+            <p class="text-gray-600 mb-6">You need to be logged in to see and save your checklist.</p>
+            <a href="index.html" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">
+                Go to Login Page
+            </a>
+        </div>
+
+        <!-- This section shows when the user IS logged in -->
+        <div id="logged-in-view" class="hidden">
+            <!-- Form to add a new task -->
+            <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
+                <form id="add-task-form" class="flex gap-4">
+                    <input type="text" id="task-input" class="flex-grow p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Add a new task..." required>
+                    <button type="submit" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-transform transform hover:scale-105">
+                        Add Task
+                    </button>
+                </form>
+            </div>
+
+            <!-- List of tasks -->
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <ul id="task-list" class="space-y-4">
+                    <!-- Tasks will be added here by JavaScript -->
+                    <p id="loading-tasks" class="text-gray-500">Loading tasks...</p>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCKcC_TPxyP9-ErqUTZHWc4Il8llwpwUg8",
+            authDomain: "forge23-04-2019.firebaseapp.com",
+            projectId: "forge23-04-2019",
+            storageBucket: "forge23-04-2019.appspot.com",
+            messagingSenderId: "725283917440",
+            appId: "1:725283917440:web:3627779e1de23153af2065",
+            measurementId: "G-FHF15XRWC3"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Get references to UI elements
+        const loggedInView = document.getElementById('logged-in-view');
+        const loggedOutView = document.getElementById('logged-out-view');
+        const addTaskForm = document.getElementById('add-task-form');
+        const taskInput = document.getElementById('task-input');
+        const taskList = document.getElementById('task-list');
+        const loadingTasksMsg = document.getElementById('loading-tasks');
+
+        let tasksUnsubscribe = null; // To stop listening for tasks when logged out
+
+        // --- Authentication ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is logged in
+                loggedInView.classList.remove('hidden');
+                loggedOutView.classList.add('hidden');
+                
+                // Get tasks for this specific user
+                getTasks(user.uid);
+
+            } else {
+                // User is logged out
+                loggedInView.classList.add('hidden');
+                loggedOutView.classList.remove('hidden');
+
+                // Stop listening for task updates if we were listening
+                if (tasksUnsubscribe) {
+                    tasksUnsubscribe();
+                }
+            }
+        });
+
+        // --- Firestore Functions ---
+
+        // Function to get and display tasks in real-time
+        const getTasks = (userId) => {
+            const tasksCollection = collection(db, 'users', userId, 'tasks');
+            const q = query(tasksCollection);
+
+            // onSnapshot listens for real-time updates
+            tasksUnsubscribe = onSnapshot(q, (querySnapshot) => {
+                loadingTasksMsg.classList.add('hidden');
+                // Clear the current list
+                taskList.innerHTML = ''; 
+
+                if (querySnapshot.empty) {
+                    taskList.innerHTML = '<p class="text-gray-500">No tasks yet. Add one above!</p>';
+                } else {
+                    querySnapshot.forEach((doc) => {
+                        const task = doc.data();
+                        const taskId = doc.id;
+                        renderTask(task, taskId);
+                    });
+                }
+            });
+        };
+
+        // Function to render a single task on the page
+        const renderTask = (task, taskId) => {
+            const li = document.createElement('li');
+            li.setAttribute('data-id', taskId);
+            li.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+
+            const taskTextSpan = document.createElement('span');
+            taskTextSpan.textContent = task.text;
+            taskTextSpan.className = 'flex-grow cursor-pointer';
+            if (task.completed) {
+                taskTextSpan.classList.add('completed');
+            }
+
+            // Toggle completion status on click
+            taskTextSpan.addEventListener('click', () => {
+                toggleTaskCompletion(taskId, !task.completed);
+            });
+
+            const deleteButton = document.createElement('button');
+            deleteButton.innerHTML = '<i class="fas fa-trash-alt text-red-500 hover:text-red-700"></i>';
+            deleteButton.className = 'ml-4 px-2';
+            deleteButton.addEventListener('click', () => {
+                deleteTask(taskId);
+            });
+
+            li.appendChild(taskTextSpan);
+            li.appendChild(deleteButton);
+            taskList.appendChild(li);
+        };
+
+        // Add a new task to Firestore
+        addTaskForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const user = auth.currentUser;
+            if (user) {
+                addDoc(collection(db, 'users', user.uid, 'tasks'), {
+                    text: taskInput.value,
+                    completed: false
+                });
+                taskInput.value = ''; // Clear the input
+            }
+        });
+
+        // Update a task's completion status
+        const toggleTaskCompletion = (taskId, newStatus) => {
+            const user = auth.currentUser;
+            if (user) {
+                const taskDocRef = doc(db, 'users', user.uid, 'tasks', taskId);
+                updateDoc(taskDocRef, {
+                    completed: newStatus
+                });
+            }
+        };
+
+        // Delete a task from Firestore
+        const deleteTask = (taskId) => {
+            const user = auth.currentUser;
+            if (user) {
+                const taskDocRef = doc(db, 'users', user.uid, 'tasks', taskId);
+                deleteDoc(taskDocRef);
+            }
+        };
+
+    </script>
+</body>
+</html>
