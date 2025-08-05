@@ -3,76 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Checklist</title>
+    <title>My Productivity Hub</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* A light grey background */
         }
-        /* Style for completed tasks */
-        .completed {
+        /* Simple transition for theme changes later */
+        .theme-transition {
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        /* Custom class for the drag handle */
+        .drag-handle {
+            cursor: grab;
+        }
+        .completed-task {
             text-decoration: line-through;
             color: #9ca3af; /* gray-400 */
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body>
 
-    <div class="container mx-auto max-w-2xl mt-12 px-4">
-        
-        <!-- Header -->
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-4xl font-bold text-gray-800">My Checklist</h1>
-            <a href="index.html" class="text-sm text-indigo-600 hover:underline">&larr; Back to Login</a>
-        </div>
-
-        <!-- This section shows when the user is not logged in -->
-        <div id="logged-out-view" class="hidden text-center bg-white p-8 rounded-xl shadow-lg">
-            <h2 class="text-2xl font-semibold mb-4">Please Log In</h2>
-            <p class="text-gray-600 mb-6">You need to be logged in to see and save your checklist.</p>
-            <a href="index.html" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">
+    <!-- This view is shown if the user is not logged in -->
+    <div id="logged-out-view" class="hidden h-screen flex items-center justify-center">
+        <div class="text-center bg-white p-12 rounded-xl shadow-lg">
+            <h2 class="text-2xl font-bold mb-4">Access Denied</h2>
+            <p class="text-gray-600 mb-6">Please log in to access your productivity hub.</p>
+            <a href="index.html" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">
                 Go to Login Page
             </a>
         </div>
+    </div>
 
-        <!-- This section shows when the user IS logged in -->
-        <div id="logged-in-view" class="hidden">
-            <!-- Form to add a new task -->
-            <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
-                <form id="add-task-form" class="flex gap-4">
-                    <input type="text" id="task-input" class="flex-grow p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Add a new task..." required>
-                    <button type="submit" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-transform transform hover:scale-105">
-                        Add Task
-                    </button>
-                </form>
+    <!-- Main container, shown only when a user is logged in -->
+    <div id="logged-in-view" class="hidden p-4 md:p-8">
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-4xl font-extrabold text-gray-800">Productivity Hub</h1>
+            <button id="sign-out-btn" class="text-sm font-medium text-gray-600 hover:text-indigo-600 theme-transition">
+                Sign Out <i class="fas fa-sign-out-alt ml-1"></i>
+            </button>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Main Content: Checklist -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Add Task Card -->
+                <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
+                    <h2 class="text-xl font-bold mb-4">Add New Task</h2>
+                    <form id="add-task-form" class="flex gap-4">
+                        <input type="text" id="task-input" class="flex-grow p-3 border border-gray-300 rounded-lg" placeholder="Enter a new task..." required>
+                        <button type="submit" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700">Add</button>
+                    </form>
+                </div>
+
+                <!-- Checklist Card -->
+                <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
+                    <h2 class="text-xl font-bold mb-4">My Master Checklist</h2>
+                    <ul id="task-list" class="space-y-3">
+                        <!-- Tasks will be dynamically loaded here -->
+                        <p id="loading-placeholder" class="text-gray-500">Loading your tasks...</p>
+                    </ul>
+                </div>
             </div>
 
-            <!-- List of tasks -->
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-                <ul id="task-list" class="space-y-4">
-                    <!-- Tasks will be added here by JavaScript -->
-                    <p id="loading-tasks" class="text-gray-500">Loading tasks...</p>
-                </ul>
+            <!-- Sidebar: Widgets (Static Placeholders) -->
+            <div class="space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
+                    <h2 class="text-xl font-bold mb-4">Focus Mode</h2>
+                    <div class="text-center"><p class="text-5xl font-mono font-bold text-gray-800">24:15</p><p class="text-sm text-gray-500">Stopwatch Session</p></div>
+                    <div class="mt-6 text-center"><h3 class="font-bold mb-2">Achievements</h3><div class="flex justify-center gap-4 text-2xl"><i class="fas fa-star text-yellow-400"></i><i class="fas fa-check-double text-green-500"></i><i class="fas fa-brain text-blue-500"></i></div></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
+                    <h2 class="text-xl font-bold mb-4">Productivity Calendar</h2>
+                    <div class="grid grid-cols-7 gap-1 text-center text-xs">
+                        <script>for(let i=0; i<35; i++) { const o = Math.random()*0.8+0.1; document.write(`<div class="w-full h-6 rounded bg-green-500" style="opacity:${o}"></div>`); }</script>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md theme-transition">
+                    <h2 class="text-xl font-bold mb-4">Select Theme</h2>
+                    <div class="grid grid-cols-2 gap-4"><button class="p-4 border-2 border-indigo-500 rounded-lg">Classic</button><button class="p-4 border rounded-lg bg-gray-800 text-white">Batman</button><button class="p-4 border rounded-lg">Iron Man</button><button class="p-4 border rounded-lg">Wonder Woman</button></div>
+                </div>
             </div>
-        </div>
-
+        </main>
     </div>
 
     <!-- Firebase SDKs -->
     <script type="module">
-        // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCKcC_TPxyP9-ErqUTZHWc4Il8llwpwUg8",
             authDomain: "forge23-04-2019.firebaseapp.com",
@@ -88,32 +118,30 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Get references to UI elements
+        // UI Elements
         const loggedInView = document.getElementById('logged-in-view');
         const loggedOutView = document.getElementById('logged-out-view');
+        const signOutBtn = document.getElementById('sign-out-btn');
         const addTaskForm = document.getElementById('add-task-form');
         const taskInput = document.getElementById('task-input');
         const taskList = document.getElementById('task-list');
-        const loadingTasksMsg = document.getElementById('loading-tasks');
+        const loadingPlaceholder = document.getElementById('loading-placeholder');
 
         let tasksUnsubscribe = null; // To stop listening for tasks when logged out
 
-        // --- Authentication ---
+        // --- Authentication state listener ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // User is logged in
+                console.log("User is logged in:", user.uid);
                 loggedInView.classList.remove('hidden');
                 loggedOutView.classList.add('hidden');
-                
-                // Get tasks for this specific user
+                // Start fetching tasks for the logged-in user
                 getTasks(user.uid);
-
             } else {
-                // User is logged out
+                console.log("User is logged out.");
                 loggedInView.classList.add('hidden');
                 loggedOutView.classList.remove('hidden');
-
-                // Stop listening for task updates if we were listening
+                // Stop listening to task changes if the function exists
                 if (tasksUnsubscribe) {
                     tasksUnsubscribe();
                 }
@@ -122,91 +150,90 @@
 
         // --- Firestore Functions ---
 
-        // Function to get and display tasks in real-time
+        // Get all tasks for a user and listen for real-time updates
         const getTasks = (userId) => {
-            const tasksCollection = collection(db, 'users', userId, 'tasks');
-            const q = query(tasksCollection);
+            const tasksCollectionRef = collection(db, 'users', userId, 'tasks');
+            const q = query(tasksCollectionRef); // We can add ordering here later, e.g., orderBy('createdAt')
 
-            // onSnapshot listens for real-time updates
-            tasksUnsubscribe = onSnapshot(q, (querySnapshot) => {
-                loadingTasksMsg.classList.add('hidden');
-                // Clear the current list
-                taskList.innerHTML = ''; 
-
-                if (querySnapshot.empty) {
+            tasksUnsubscribe = onSnapshot(q, (snapshot) => {
+                // Clear the list every time there's an update
+                taskList.innerHTML = '';
+                if (snapshot.empty) {
                     taskList.innerHTML = '<p class="text-gray-500">No tasks yet. Add one above!</p>';
                 } else {
-                    querySnapshot.forEach((doc) => {
-                        const task = doc.data();
-                        const taskId = doc.id;
-                        renderTask(task, taskId);
+                    snapshot.docs.forEach(doc => {
+                        renderTask(doc.id, doc.data());
                     });
                 }
             });
         };
 
-        // Function to render a single task on the page
-        const renderTask = (task, taskId) => {
+        // Render a single task item in the list
+        const renderTask = (id, taskData) => {
             const li = document.createElement('li');
-            li.setAttribute('data-id', taskId);
-            li.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+            li.setAttribute('data-id', id);
+            li.className = 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg';
 
-            const taskTextSpan = document.createElement('span');
-            taskTextSpan.textContent = task.text;
-            taskTextSpan.className = 'flex-grow cursor-pointer';
-            if (task.completed) {
-                taskTextSpan.classList.add('completed');
-            }
+            // Add completed class if necessary
+            const taskTextClasses = taskData.completed ? 'flex-grow font-medium completed-task' : 'flex-grow font-medium';
+            const checkedAttribute = taskData.completed ? 'checked' : '';
 
-            // Toggle completion status on click
-            taskTextSpan.addEventListener('click', () => {
-                toggleTaskCompletion(taskId, !task.completed);
+            li.innerHTML = `
+                <i class="fas fa-grip-vertical drag-handle text-gray-400"></i>
+                <input type="checkbox" class="task-checkbox h-5 w-5 rounded text-indigo-600" ${checkedAttribute}>
+                <span class="${taskTextClasses}">${taskData.text}</span>
+                <button class="delete-btn text-gray-400 hover:text-red-500"><i class="fas fa-trash"></i></button>
+            `;
+            
+            // Add event listeners for checkbox and delete button
+            li.querySelector('.task-checkbox').addEventListener('change', (e) => {
+                toggleTaskComplete(id, e.target.checked);
+            });
+            li.querySelector('.delete-btn').addEventListener('click', () => {
+                deleteTask(id);
             });
 
-            const deleteButton = document.createElement('button');
-            deleteButton.innerHTML = '<i class="fas fa-trash-alt text-red-500 hover:text-red-700"></i>';
-            deleteButton.className = 'ml-4 px-2';
-            deleteButton.addEventListener('click', () => {
-                deleteTask(taskId);
-            });
-
-            li.appendChild(taskTextSpan);
-            li.appendChild(deleteButton);
             taskList.appendChild(li);
         };
 
-        // Add a new task to Firestore
+        // Add a new task to the database
         addTaskForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const user = auth.currentUser;
-            if (user) {
+            if (user && taskInput.value.trim() !== '') {
                 addDoc(collection(db, 'users', user.uid, 'tasks'), {
                     text: taskInput.value,
-                    completed: false
+                    completed: false,
+                    createdAt: serverTimestamp() // Adds a server-side timestamp
                 });
-                taskInput.value = ''; // Clear the input
+                taskInput.value = ''; // Clear input field
             }
         });
 
-        // Update a task's completion status
-        const toggleTaskCompletion = (taskId, newStatus) => {
+        // Toggle a task's 'completed' status
+        const toggleTaskComplete = (id, isCompleted) => {
             const user = auth.currentUser;
             if (user) {
-                const taskDocRef = doc(db, 'users', user.uid, 'tasks', taskId);
-                updateDoc(taskDocRef, {
-                    completed: newStatus
-                });
+                const taskDocRef = doc(db, 'users', user.uid, 'tasks', id);
+                updateDoc(taskDocRef, { completed: isCompleted });
             }
         };
 
-        // Delete a task from Firestore
-        const deleteTask = (taskId) => {
+        // Delete a task from the database
+        const deleteTask = (id) => {
             const user = auth.currentUser;
             if (user) {
-                const taskDocRef = doc(db, 'users', user.uid, 'tasks', taskId);
+                const taskDocRef = doc(db, 'users', user.uid, 'tasks', id);
                 deleteDoc(taskDocRef);
             }
         };
+
+        // Sign out button functionality
+        signOutBtn.addEventListener('click', () => {
+            signOut(auth).catch((error) => {
+                console.error('Sign Out Error', error);
+            });
+        });
 
     </script>
 </body>
