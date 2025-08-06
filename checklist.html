@@ -351,7 +351,6 @@
         function getTasks(userId) {
             return new Promise((resolve, reject) => {
                 const tasksRef = collection(db, 'users', userId, 'tasks');
-                // FIX: Removed orderBy from the query. Sorting will be done client-side.
                 const q = query(tasksRef);
                 
                 setSyncStatus('syncing');
@@ -360,11 +359,11 @@
                     renderTaskList();
                     updateMasterProgress();
                     setSyncStatus('synced');
-                    resolve(); // Resolve the promise once data is loaded
+                    resolve(); 
                 }, (error) => {
                     console.error("Error fetching tasks:", error);
                     setSyncStatus('error');
-                    reject(error); // Reject the promise on error
+                    reject(error); 
                 });
             });
         }
@@ -378,7 +377,6 @@
                         if(settings.version) headerTitle.textContent = `PRODUCTIVITY HUB ${settings.version.toString().padStart(2, '0')}`;
                         if(settings.stopwatchState) initStopwatch(settings.stopwatchState);
                     } else {
-                        // Initialize settings if they don't exist
                         setDoc(settingsRef, { theme: 'theme-default', version: 3, stopwatchState: { time: 0, isRunning: false } });
                     }
                     resolve();
@@ -420,7 +418,6 @@
                 }
             }
             
-            // FIX: Sort root tasks client-side
             rootTasks.sort((a,b) => (a.order || 0) - (b.order || 0)).forEach(task => {
                 const taskElement = createTaskElement(task);
                 taskListEl.appendChild(taskElement);
@@ -432,15 +429,13 @@
             if (!container) return;
             
             container.innerHTML = '';
-            // FIX: Sort child tasks client-side
             parentTask.children.sort((a, b) => (a.order || 0) - (b.order || 0)).forEach(childTask => {
                 const childElement = createTaskElement(childTask);
                 container.appendChild(childElement);
                 renderChildren(childTask, childElement);
             });
         }
-        function createTaskElement(task) { /* ... same as before ... */ }
-
+        
         // --- TASK MANIPULATION ---
         document.getElementById('add-subject-btn').addEventListener('click', async () => {
             const name = prompt("Enter new subject name:");
@@ -452,7 +447,7 @@
                     completed: false, 
                     level: 0, 
                     parentId: null, 
-                    order: rootTasks.length, // Assign order based on current root tasks
+                    order: rootTasks.length,
                     createdAt: serverTimestamp() 
                 });
                 setSyncStatus('synced');
@@ -474,15 +469,7 @@
                 setSyncStatus('synced');
             }
         }
-        async function editTaskName(element, taskId) { /* ... */ }
-        async function deleteTask(taskId) { /* ... */ }
-        async function toggleFlag(taskId, flagged) { /* ... */ }
-        async function toggleComplete(taskId, isCompleted) { /* ... */ }
-
-        // --- PROGRESS BARS ---
-        function updateMasterProgress() { /* ... */ }
-        function getSubjectProgress(subjectId) { /* ... */ }
-
+        
         // --- MODAL HANDLING ---
         document.querySelectorAll('.modal .btn-cancel, .modal .btn-close').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -490,19 +477,39 @@
             });
         });
 
-        // Bulk Add Modal
         const bulkAddModal = document.getElementById('bulk-add-modal');
         document.getElementById('bulk-add-btn').addEventListener('click', () => bulkAddModal.classList.remove('hidden'));
         document.getElementById('confirm-bulk-add').addEventListener('click', handleBulkAdd);
-        async function handleBulkAdd() { /* ... */ }
-
-        // Task Detail Modal
+        
         const taskDetailModal = document.getElementById('task-detail-modal');
         let currentEditingTaskId = null;
-        async function openTaskDetailModal(taskId) { /* ... */ }
-        document.getElementById('save-task-details').addEventListener('click', async () => { /* ... */ });
-        document.getElementById('add-attachment-btn').addEventListener('click', () => { /* ... */ });
-        document.getElementById('modal-attachments-list').addEventListener('click', (e) => { /* ... */ });
+        
+        document.getElementById('save-task-details').addEventListener('click', async () => {
+            if (!currentEditingTaskId) return;
+            setSyncStatus('syncing');
+            const notes = document.getElementById('modal-notes').value;
+            const attachmentLinks = Array.from(document.querySelectorAll('#modal-attachments-list a')).map(a => a.href);
+            await updateDoc(doc(db, 'users', currentUserId, 'tasks', currentEditingTaskId), { notes, attachments: attachmentLinks });
+            taskDetailModal.classList.add('hidden');
+            currentEditingTaskId = null;
+            setSyncStatus('synced');
+        });
+        document.getElementById('add-attachment-btn').addEventListener('click', () => {
+            const linkInput = document.getElementById('modal-attachment-link');
+            const link = linkInput.value.trim();
+            if (!link) return;
+            const attachmentsList = document.getElementById('modal-attachments-list');
+            const el = document.createElement('div');
+            el.className = 'flex items-center justify-between bg-gray-100 p-2 rounded';
+            el.innerHTML = `<a href="${link}" target="_blank" class="truncate text-blue-600 hover:underline">${link}</a><button class="remove-attachment-btn text-red-500 ml-2"><i class="fas fa-times"></i></button>`;
+            attachmentsList.appendChild(el);
+            linkInput.value = '';
+        });
+        document.getElementById('modal-attachments-list').addEventListener('click', (e) => {
+            if (e.target.closest('.remove-attachment-btn')) {
+                e.target.closest('.remove-attachment-btn').parentElement.remove();
+            }
+        });
 
         // --- CALENDAR ---
         const calendarGrid = document.getElementById('calendar-grid');
@@ -510,23 +517,54 @@
         const calendarModal = document.getElementById('calendar-modal');
         let currentDate = new Date();
         let calendarModalState = { date: null, color: null };
-        function renderCalendar() { /* ... */ }
-        document.getElementById('prev-month-btn').addEventListener('click', () => { /* ... */ });
-        document.getElementById('next-month-btn').addEventListener('click', () => { /* ... */ });
-        calendarGrid.addEventListener('click', (e) => { /* ... */ });
-        document.getElementById('calendar-color-tags').addEventListener('click', (e) => { /* ... */ });
-        document.getElementById('save-bookmark-btn').addEventListener('click', async () => { /* ... */ });
-        document.getElementById('delete-bookmark-btn').addEventListener('click', async () => { /* ... */ });
+        
+        document.getElementById('prev-month-btn').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
+        document.getElementById('next-month-btn').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
+        calendarGrid.addEventListener('click', (e) => {
+            if(e.target.classList.contains('calendar-day')) {
+                const day = e.target.dataset.day;
+                const month = currentDate.getMonth();
+                const year = currentDate.getFullYear();
+                const monthId = `${year}-${String(month + 1).padStart(2, '0')}`;
+                const bookmark = (calendarBookmarks[monthId] && calendarBookmarks[monthId][day]) ? calendarBookmarks[monthId][day] : { note: '', color: 'var(--tag-color-1)' };
+                calendarModalState = { date: {day, month, year}, color: bookmark.color };
+                document.getElementById('calendar-modal-date').textContent = `Bookmark for ${currentDate.toLocaleString('default', { month: 'long' })} ${day}, ${year}`;
+                document.getElementById('calendar-note').value = bookmark.note;
+                document.querySelectorAll('#calendar-color-tags button').forEach(btn => {
+                    btn.classList.toggle('ring-2', btn.dataset.color === bookmark.color);
+                });
+                calendarModal.classList.remove('hidden');
+            }
+        });
+        document.getElementById('calendar-color-tags').addEventListener('click', (e) => {
+            if(e.target.tagName === 'BUTTON') {
+                calendarModalState.color = e.target.dataset.color;
+                document.querySelectorAll('#calendar-color-tags button').forEach(btn => btn.classList.remove('ring-2'));
+                e.target.classList.add('ring-2');
+            }
+        });
+        document.getElementById('save-bookmark-btn').addEventListener('click', async () => {
+            const { day, month, year } = calendarModalState.date;
+            const monthId = `${year}-${String(month + 1).padStart(2, '0')}`;
+            const note = document.getElementById('calendar-note').value;
+            const color = calendarModalState.color;
+            const calendarRef = doc(db, 'users', currentUserId, 'calendar', monthId);
+            await setDoc(calendarRef, { [day]: { note, color } }, { merge: true });
+            calendarModal.classList.add('hidden');
+        });
+        document.getElementById('delete-bookmark-btn').addEventListener('click', async () => {
+            if (!confirm("Delete this bookmark?")) return;
+            const { day, month, year } = calendarModalState.date;
+            const monthId = `${year}-${String(month + 1).padStart(2, '0')}`;
+            const calendarRef = doc(db, 'users', currentUserId, 'calendar', monthId);
+            await updateDoc(calendarRef, { [day]: deleteField() });
+            calendarModal.classList.add('hidden');
+        });
 
         // --- STOPWATCH ---
         let stopwatch = { time: 0, isRunning: false, intervalId: null };
         const stopwatchDisplay = document.getElementById('stopwatch-display');
-        function initStopwatch(state) { /* ... */ }
-        function startStopwatch() { /* ... */ }
-        function stopStopwatch() { /* ... */ }
-        function resetStopwatch() { /* ... */ }
-        function updateStopwatchDisplay() { /* ... */ }
-        async function saveStopwatchState() { /* ... */ }
+        
         document.getElementById('stopwatch-start').addEventListener('click', startStopwatch);
         document.getElementById('stopwatch-stop').addEventListener('click', stopStopwatch);
         document.getElementById('stopwatch-reset').addEventListener('click', resetStopwatch);
@@ -534,18 +572,33 @@
 
         // --- UTILITY & UI ---
         document.getElementById('sync-btn').addEventListener('click', () => setSyncStatus('syncing', true));
-        function setSyncStatus(status, manual = false) { /* ... */ }
-        function getDescendants(parentId, includeSelf = false) { /* ... */ }
-        document.getElementById('quit-btn').addEventListener('click', () => { /* ... */ });
-        document.querySelectorAll('.theme-btn').forEach(btn => { /* ... */ });
-        function applyTheme(theme) { /* ... */ }
-        headerTitle.addEventListener('click', async () => { /* ... */ });
-        function toggleCollapse(event, taskId) { /* ... */ }
-
+        
+        document.getElementById('quit-btn').addEventListener('click', () => {
+            if (stopwatch.isRunning) stopStopwatch();
+            else saveStopwatchState();
+            signOut(auth).then(() => { window.location.href = 'index.html'; });
+        });
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const theme = btn.dataset.theme;
+                applyTheme(theme);
+                if (currentUserId) {
+                    setDoc(doc(db, 'users', currentUserId, 'settings'), { theme }, { merge: true });
+                }
+            });
+        });
+        
+        headerTitle.addEventListener('click', async () => {
+            if(!currentUserId) return;
+            const settingsDoc = await getDoc(doc(db, 'users', currentUserId, 'settings'));
+            let currentVersion = settingsDoc.exists() ? settingsDoc.data().version || 1 : 1;
+            await setDoc(doc(db, 'users', currentUserId, 'settings'), { version: currentVersion + 1 }, { merge: true });
+        });
+        
         // Initialize on load
         renderCalendar();
         
-        // --- Full function definitions to avoid breaking the app ---
+        // --- Full function definitions ---
         function createTaskElement(task) {
             const isParent = tasks.some(t => t.parentId === task.id);
             const canHaveChildren = task.level < 3;
@@ -697,32 +750,6 @@
             }
             taskDetailModal.classList.remove('hidden');
         }
-        document.getElementById('save-task-details').addEventListener('click', async () => {
-            if (!currentEditingTaskId) return;
-            setSyncStatus('syncing');
-            const notes = document.getElementById('modal-notes').value;
-            const attachmentLinks = Array.from(document.querySelectorAll('#modal-attachments-list a')).map(a => a.href);
-            await updateDoc(doc(db, 'users', currentUserId, 'tasks', currentEditingTaskId), { notes, attachments: attachmentLinks });
-            taskDetailModal.classList.add('hidden');
-            currentEditingTaskId = null;
-            setSyncStatus('synced');
-        });
-        document.getElementById('add-attachment-btn').addEventListener('click', () => {
-            const linkInput = document.getElementById('modal-attachment-link');
-            const link = linkInput.value.trim();
-            if (!link) return;
-            const attachmentsList = document.getElementById('modal-attachments-list');
-            const el = document.createElement('div');
-            el.className = 'flex items-center justify-between bg-gray-100 p-2 rounded';
-            el.innerHTML = `<a href="${link}" target="_blank" class="truncate text-blue-600 hover:underline">${link}</a><button class="remove-attachment-btn text-red-500 ml-2"><i class="fas fa-times"></i></button>`;
-            attachmentsList.appendChild(el);
-            linkInput.value = '';
-        });
-        document.getElementById('modal-attachments-list').addEventListener('click', (e) => {
-            if (e.target.closest('.remove-attachment-btn')) {
-                e.target.closest('.remove-attachment-btn').parentElement.remove();
-            }
-        });
         function renderCalendar() {
             calendarGrid.innerHTML = '';
             const month = currentDate.getMonth();
@@ -758,51 +785,9 @@
                 calendarGrid.appendChild(dayEl);
             }
         }
-        document.getElementById('prev-month-btn').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
-        document.getElementById('next-month-btn').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
-        calendarGrid.addEventListener('click', (e) => {
-            if(e.target.classList.contains('calendar-day')) {
-                const day = e.target.dataset.day;
-                const month = currentDate.getMonth();
-                const year = currentDate.getFullYear();
-                const monthId = `${year}-${String(month + 1).padStart(2, '0')}`;
-                const bookmark = (calendarBookmarks[monthId] && calendarBookmarks[monthId][day]) ? calendarBookmarks[monthId][day] : { note: '', color: 'var(--tag-color-1)' };
-                calendarModalState = { date: {day, month, year}, color: bookmark.color };
-                document.getElementById('calendar-modal-date').textContent = `Bookmark for ${currentDate.toLocaleString('default', { month: 'long' })} ${day}, ${year}`;
-                document.getElementById('calendar-note').value = bookmark.note;
-                document.querySelectorAll('#calendar-color-tags button').forEach(btn => {
-                    btn.classList.toggle('ring-2', btn.dataset.color === bookmark.color);
-                });
-                calendarModal.classList.remove('hidden');
-            }
-        });
-        document.getElementById('calendar-color-tags').addEventListener('click', (e) => {
-            if(e.target.tagName === 'BUTTON') {
-                calendarModalState.color = e.target.dataset.color;
-                document.querySelectorAll('#calendar-color-tags button').forEach(btn => btn.classList.remove('ring-2'));
-                e.target.classList.add('ring-2');
-            }
-        });
-        document.getElementById('save-bookmark-btn').addEventListener('click', async () => {
-            const { day, month, year } = calendarModalState.date;
-            const monthId = `${year}-${String(month + 1).padStart(2, '0')}`;
-            const note = document.getElementById('calendar-note').value;
-            const color = calendarModalState.color;
-            const calendarRef = doc(db, 'users', currentUserId, 'calendar', monthId);
-            await setDoc(calendarRef, { [day]: { note, color } }, { merge: true });
-            calendarModal.classList.add('hidden');
-        });
-        document.getElementById('delete-bookmark-btn').addEventListener('click', async () => {
-            if (!confirm("Delete this bookmark?")) return;
-            const { day, month, year } = calendarModalState.date;
-            const monthId = `${year}-${String(month + 1).padStart(2, '0')}`;
-            const calendarRef = doc(db, 'users', currentUserId, 'calendar', monthId);
-            await updateDoc(calendarRef, { [day]: deleteField() });
-            calendarModal.classList.add('hidden');
-        });
         function initStopwatch(state) {
             stopwatch = { ...stopwatch, ...state };
-            if (stopwatch.isRunning) startStopwatch(); // Resume if it was running
+            if (stopwatch.isRunning) startStopwatch();
             updateStopwatchDisplay();
         }
         function startStopwatch() {
@@ -870,30 +855,10 @@
             }
             return descendants;
         }
-        document.getElementById('quit-btn').addEventListener('click', () => {
-            if (stopwatch.isRunning) stopStopwatch();
-            else saveStopwatchState();
-            signOut(auth).then(() => { window.location.href = 'index.html'; });
-        });
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const theme = btn.dataset.theme;
-                applyTheme(theme);
-                if (currentUserId) {
-                    setDoc(doc(db, 'users', currentUserId, 'settings'), { theme }, { merge: true });
-                }
-            });
-        });
         function applyTheme(theme) {
             document.body.className = theme;
             renderCalendar();
         }
-        headerTitle.addEventListener('click', async () => {
-            if(!currentUserId) return;
-            const settingsDoc = await getDoc(doc(db, 'users', currentUserId, 'settings'));
-            let currentVersion = settingsDoc.exists() ? settingsDoc.data().version || 1 : 1;
-            await setDoc(doc(db, 'users', currentUserId, 'settings'), { version: currentVersion + 1 }, { merge: true });
-        });
         async function toggleCollapse(event, taskId) {
             const icon = event.target;
             const taskElement = icon.closest('.task-item');
