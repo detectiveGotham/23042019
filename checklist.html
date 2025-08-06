@@ -19,7 +19,7 @@
             font-family: var(--font-main);
         }
 
-        h1, h2, h3, h4, h5, h6 {
+        h1, h2, h3, h4, h5, h6, .font-mono {
             font-family: var(--font-mono);
         }
         
@@ -38,6 +38,9 @@
             --progress-bar: #0d6efd;
             --quit-bg: #dc3545;
             --quit-hover: #c82333;
+            --tag-color-1: #0d6efd;
+            --tag-color-2: #198754;
+            --tag-color-3: #ffc107;
         }
 
         /* Matrix Theme */
@@ -55,6 +58,9 @@
             --progress-bar: #00FF41;
             --quit-bg: #990000;
             --quit-hover: #660000;
+            --tag-color-1: #00FF41;
+            --tag-color-2: #00B32D;
+            --tag-color-3: #008022;
         }
 
         /* Ignite Theme */
@@ -72,6 +78,9 @@
             --progress-bar: #e84545;
             --quit-bg: #6f2232;
             --quit-hover: #950740;
+            --tag-color-1: #e84545;
+            --tag-color-2: #c3073f;
+            --tag-color-3: #950740;
         }
 
         /* Breeze Theme */
@@ -89,65 +98,38 @@
             --progress-bar: #009688;
             --quit-bg: #d32f2f;
             --quit-hover: #c62828;
+            --tag-color-1: #009688;
+            --tag-color-2: #00796b;
+            --tag-color-3: #004d40;
         }
         
-        body {
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        .task-item {
-            border-left: 2px solid var(--border-color);
-            transition: border-color 0.3s;
-        }
-
+        body { background-color: var(--bg-primary); color: var(--text-primary); transition: background-color 0.3s, color 0.3s; }
+        .task-item { border-left: 2px solid var(--border-color); transition: border-color 0.3s; }
         .task-item.level-0 { border-left: none; }
         .task-item.level-1 { margin-left: 1rem; }
         .task-item.level-2 { margin-left: 2.5rem; }
         .task-item.level-3 { margin-left: 4rem; }
-
-        .task-item.flagged {
-            background-color: var(--flag-color);
-            border-left-color: var(--flag-border);
-        }
-
+        .task-item.flagged { background-color: var(--flag-color); border-left-color: var(--flag-border); }
         .progress-container { background-color: var(--progress-bg); }
         .progress-bar { background-color: var(--progress-bar); }
-        .header, .modal-content { background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color); }
+        .header, .modal-content, .card { background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color); }
         .btn-primary { background-color: var(--accent-color); color: white; }
         .btn-primary:hover { background-color: var(--accent-color-dark); }
         .btn-quit { background-color: var(--quit-bg); color: white; }
         .btn-quit:hover { background-color: var(--quit-hover); }
+        .task-controls .control-btn { opacity: 0; transition: opacity 0.2s; }
+        .task-item:hover .task-controls .control-btn { opacity: 1; }
+        .task-name { cursor: pointer; }
+        .task-name:hover { text-decoration: underline; }
+        .modal { background-color: rgba(0,0,0,0.5); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        .task-controls .control-btn {
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        .task-item:hover .task-controls .control-btn {
-            opacity: 1;
-        }
-        .task-name {
-            cursor: pointer;
-        }
-        .task-name:hover {
-            text-decoration: underline;
-        }
-        
-        .modal {
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        /* Hide scrollbar for Chrome, Safari and Opera */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-
-        /* Hide scrollbar for IE, Edge and Firefox */
-        .no-scrollbar {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
-        }
+        /* Calendar Styles */
+        .calendar-day { transition: background-color 0.2s, border-color 0.2s; }
+        .calendar-day.today { background-color: var(--accent-color); color: white; border-color: var(--accent-color-dark); }
+        .calendar-day.bookmarked { position: relative; }
+        .calendar-day.bookmarked::after { content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; border-radius: 50%; background-color: var(--bookmark-color, var(--text-secondary)); }
     </style>
 </head>
 <body class="theme-default">
@@ -170,7 +152,7 @@
     <main id="app" class="hidden">
         <!-- Header -->
         <header class="header sticky top-0 z-30 px-4 py-2 flex items-center justify-between shadow-md">
-            <h1 id="header-title" class="text-xl font-bold tracking-widest">PRODUCTIVITY HUB 01</h1>
+            <h1 id="header-title" class="text-xl font-bold tracking-widest">PRODUCTIVITY HUB 02</h1>
             <div class="flex items-center space-x-4">
                 <div class="theme-selector flex items-center space-x-2">
                     <button data-theme="theme-default" class="theme-btn w-6 h-6 rounded-full bg-blue-500 border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"></button>
@@ -180,6 +162,7 @@
                 </div>
                 <button id="bulk-add-btn" class="btn-primary px-4 py-2 rounded-md font-semibold">FORGE</button>
                 <div class="flex items-center space-x-2">
+                    <button id="sync-btn" class="text-gray-600 hover:text-black"><i class="fas fa-sync-alt"></i></button>
                     <span id="sync-status" class="text-sm text-gray-500">Synced</span>
                     <i id="sync-icon" class="fas fa-check-circle text-green-500"></i>
                 </div>
@@ -189,8 +172,34 @@
 
         <!-- Main Content -->
         <div class="container mx-auto p-4 lg:p-6">
+            <!-- New Tools Section -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <!-- Productivity Calendar -->
+                <div class="md:col-span-2 card bg-white rounded-lg shadow p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-lg font-bold">🗓️ Productivity Calendar</h2>
+                        <div class="flex items-center space-x-2">
+                            <button id="prev-month-btn" class="p-2 rounded-full hover:bg-gray-200"><i class="fas fa-chevron-left"></i></button>
+                            <h3 id="calendar-month-year" class="font-bold text-center w-32"></h3>
+                            <button id="next-month-btn" class="p-2 rounded-full hover:bg-gray-200"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center"></div>
+                </div>
+                <!-- Stopwatch -->
+                <div class="card bg-white rounded-lg shadow p-4 flex flex-col justify-between">
+                    <h2 class="text-lg font-bold mb-2">⏱️ Stopwatch</h2>
+                    <div id="stopwatch-display" class="text-5xl font-mono text-center my-4">00:00:00</div>
+                    <div class="flex justify-around">
+                        <button id="stopwatch-start" class="btn-primary px-4 py-2 rounded-md w-24">Start</button>
+                        <button id="stopwatch-stop" class="bg-yellow-500 text-white px-4 py-2 rounded-md w-24">Stop</button>
+                        <button id="stopwatch-reset" class="bg-gray-500 text-white px-4 py-2 rounded-md w-24">Reset</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Master Progress & Controls -->
-            <div class="bg-white rounded-lg shadow p-4 mb-6">
+            <div class="card bg-white rounded-lg shadow p-4 mb-6">
                 <h2 class="text-lg font-bold mb-2">Master Progress</h2>
                 <div class="progress-container w-full bg-gray-200 rounded-full h-4">
                     <div id="master-progress-bar" class="progress-bar h-4 rounded-full" style="width: 0%;"></div>
@@ -202,30 +211,30 @@
             </div>
 
             <!-- Task List -->
-            <div id="task-list" class="space-y-2">
-                <!-- Tasks will be dynamically inserted here -->
-            </div>
+            <div id="task-list" class="space-y-2"></div>
         </div>
     </main>
 
-    <!-- Bulk Add Modal -->
-    <div id="bulk-add-modal" class="modal hidden fixed inset-0 z-40 flex items-center justify-center">
+    <!-- Modals -->
+    <div id="bulk-add-modal" class="modal hidden fixed inset-0 z-40 flex items-center justify-center p-4">
         <div class="modal-content w-full max-w-2xl bg-white rounded-lg shadow-xl p-6">
             <h3 class="text-2xl font-bold mb-4">Bulk Add Tasks</h3>
             <p class="text-gray-600 mb-4">Paste your indented list below. Use spaces for indentation to create the hierarchy.</p>
             <textarea id="bulk-add-textarea" rows="10" class="w-full p-2 border rounded-md bg-gray-50"></textarea>
             <div class="flex justify-end space-x-4 mt-4">
-                <button id="cancel-bulk-add" class="px-4 py-2 rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300">Cancel</button>
+                <button class="btn-cancel px-4 py-2 rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300">Cancel</button>
                 <button id="confirm-bulk-add" class="btn-primary px-4 py-2 rounded-md font-semibold">Add Tasks</button>
             </div>
         </div>
     </div>
     
-    <!-- Task Detail Modal -->
-    <div id="task-detail-modal" class="modal hidden fixed inset-0 z-40 flex items-center justify-center">
+    <div id="task-detail-modal" class="modal hidden fixed inset-0 z-40 flex items-center justify-center p-4">
         <div class="modal-content w-full max-w-3xl bg-white rounded-lg shadow-xl overflow-hidden">
             <div class="p-6">
-                <h3 id="modal-task-name" class="text-2xl font-bold mb-4">Task Details</h3>
+                <div class="flex justify-between items-start">
+                    <h3 id="modal-task-name" class="text-2xl font-bold mb-4">Task Details</h3>
+                    <button class="btn-close text-2xl text-gray-500 hover:text-gray-800">&times;</button>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <h4 class="font-semibold mb-2">Notes</h4>
@@ -240,26 +249,43 @@
                         <div id="modal-attachments-list" class="space-y-2 max-h-48 overflow-y-auto no-scrollbar"></div>
                     </div>
                 </div>
-                <div id="youtube-player-container" class="mt-4 hidden">
-                    <div id="youtube-player"></div>
-                    <button id="play-in-background-btn" class="btn-primary mt-2 px-4 py-2 rounded-md text-sm">Play in Background</button>
+            </div>
+            <div class="bg-gray-100 px-6 py-3 flex justify-end space-x-4">
+                 <button class="btn-cancel px-4 py-2 rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300">Cancel</button>
+                 <button id="save-task-details" class="btn-primary px-4 py-2 rounded-md font-semibold">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="calendar-modal" class="modal hidden fixed inset-0 z-40 flex items-center justify-center p-4">
+        <div class="modal-content w-full max-w-md bg-white rounded-lg shadow-xl">
+            <div class="p-6">
+                <div class="flex justify-between items-start">
+                    <h3 id="calendar-modal-date" class="text-xl font-bold mb-4">Bookmark Date</h3>
+                    <button class="btn-close text-2xl text-gray-500 hover:text-gray-800">&times;</button>
+                </div>
+                <textarea id="calendar-note" class="w-full p-2 border rounded-md" rows="4" placeholder="Add a note..."></textarea>
+                <div class="flex items-center justify-between mt-4">
+                    <div id="calendar-color-tags" class="flex space-x-2">
+                        <button class="w-8 h-8 rounded-full border-2" style="background-color: var(--tag-color-1);" data-color="var(--tag-color-1)"></button>
+                        <button class="w-8 h-8 rounded-full border-2" style="background-color: var(--tag-color-2);" data-color="var(--tag-color-2)"></button>
+                        <button class="w-8 h-8 rounded-full border-2" style="background-color: var(--tag-color-3);" data-color="var(--tag-color-3)"></button>
+                    </div>
+                    <button id="delete-bookmark-btn" class="text-red-500 hover:text-red-700 font-semibold">Delete</button>
                 </div>
             </div>
             <div class="bg-gray-100 px-6 py-3 flex justify-end space-x-4">
-                 <button id="save-task-details" class="btn-primary px-4 py-2 rounded-md font-semibold">Save & Close</button>
+                <button class="btn-cancel px-4 py-2 rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300">Cancel</button>
+                <button id="save-bookmark-btn" class="btn-primary px-4 py-2 rounded-md font-semibold">Save Bookmark</button>
             </div>
         </div>
     </div>
     
-    <audio id="background-audio"></audio>
-
     <script type="module">
-        // 1. Firebase SDK Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, onSnapshot, doc, updateDoc, deleteDoc, writeBatch, serverTimestamp, getDoc, setDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, doc, updateDoc, deleteDoc, writeBatch, serverTimestamp, getDoc, setDoc, orderBy, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // 2. The Firebase Configuration Object
         const firebaseConfig = {
             apiKey: "AIzaSyCKcC_TPxyP9-ErqUTZHWc4Il8llwpwUg8",
             authDomain: "forge23-04-2019.firebaseapp.com",
@@ -269,7 +295,6 @@
             appId: "1:725283917440:web:3627779e1de23153af2065"
         };
 
-        // 3. Firebase Initialization
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -277,8 +302,8 @@
         // Global state
         let currentUserId = null;
         let tasks = [];
-        let unsubscribeTasks = null;
-        let unsubscribeSettings = null;
+        let calendarBookmarks = {};
+        let unsubscribeTasks, unsubscribeSettings, unsubscribeCalendar;
         
         const appEl = document.getElementById('app');
         const loaderEl = document.getElementById('app-loader');
@@ -286,7 +311,7 @@
         const taskListEl = document.getElementById('task-list');
         const headerTitle = document.getElementById('header-title');
 
-        // 4. The Authentication State Listener
+        // --- AUTHENTICATION ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUserId = user.uid;
@@ -296,9 +321,11 @@
                 
                 if (unsubscribeTasks) unsubscribeTasks();
                 if (unsubscribeSettings) unsubscribeSettings();
+                if (unsubscribeCalendar) unsubscribeCalendar();
 
                 getTasks(user.uid);
                 getSettings(user.uid);
+                getCalendarData(user.uid);
             } else {
                 currentUserId = null;
                 appEl.classList.add('hidden');
@@ -306,11 +333,301 @@
                 accessDeniedEl.classList.remove('hidden');
                 if (unsubscribeTasks) unsubscribeTasks();
                 if (unsubscribeSettings) unsubscribeSettings();
+                if (unsubscribeCalendar) unsubscribeCalendar();
+                stopStopwatch();
             }
         });
+
+        // --- DATA FETCHING ---
+        function getTasks(userId) { /* ... same as before ... */ }
+        function getSettings(userId) {
+            const settingsRef = doc(db, 'users', userId, 'settings');
+            unsubscribeSettings = onSnapshot(settingsRef, (doc) => {
+                if (doc.exists()) {
+                    const settings = doc.data();
+                    if (settings.theme) applyTheme(settings.theme);
+                    if(settings.version) headerTitle.textContent = `PRODUCTIVITY HUB ${settings.version.toString().padStart(2, '0')}`;
+                    if(settings.stopwatchState) initStopwatch(settings.stopwatchState);
+                } else {
+                    setDoc(settingsRef, { theme: 'theme-default', version: 2, stopwatchState: { time: 0, isRunning: false } });
+                }
+            });
+        }
+        function getCalendarData(userId) {
+            const calendarRef = collection(db, 'users', userId, 'calendar');
+            unsubscribeCalendar = onSnapshot(calendarRef, (snapshot) => {
+                calendarBookmarks = {};
+                snapshot.docs.forEach(doc => {
+                    calendarBookmarks[doc.id] = doc.data();
+                });
+                renderCalendar();
+            });
+        }
+
+        // --- RENDERING ---
+        function renderTaskList() { /* ... same as before ... */ }
+        function createTaskElement(task) { /* ... same as before ... */ }
+
+        // --- TASK MANIPULATION ---
+        document.getElementById('add-subject-btn').addEventListener('click', async () => { /* ... */ });
+        async function addChildTask(parentId, level) { /* ... */ }
+        async function editTaskName(element, taskId) { /* ... */ }
+        async function deleteTask(taskId) { /* ... */ }
+        async function toggleFlag(taskId, flagged) { /* ... */ }
+        async function toggleComplete(taskId, isCompleted) { /* ... */ }
+
+        // --- PROGRESS BARS ---
+        function updateMasterProgress() { /* ... */ }
+        function getSubjectProgress(subjectId) { /* ... */ }
+
+        // --- MODAL HANDLING ---
+        document.querySelectorAll('.modal .btn-cancel, .modal .btn-close').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.closest('.modal').classList.add('hidden');
+            });
+        });
+
+        // Bulk Add Modal
+        const bulkAddModal = document.getElementById('bulk-add-modal');
+        document.getElementById('bulk-add-btn').addEventListener('click', () => bulkAddModal.classList.remove('hidden'));
+        document.getElementById('confirm-bulk-add').addEventListener('click', handleBulkAdd);
+        async function handleBulkAdd() { /* ... */ }
+
+        // Task Detail Modal
+        const taskDetailModal = document.getElementById('task-detail-modal');
+        let currentEditingTaskId = null;
+        async function openTaskDetailModal(taskId) {
+            currentEditingTaskId = taskId;
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+            document.getElementById('modal-task-name').textContent = task.name;
+            document.getElementById('modal-notes').value = task.notes || '';
+            const attachmentsList = document.getElementById('modal-attachments-list');
+            attachmentsList.innerHTML = '';
+            if (task.attachments) {
+                task.attachments.forEach((link, index) => {
+                    const el = document.createElement('div');
+                    el.className = 'flex items-center justify-between bg-gray-100 p-2 rounded';
+                    el.innerHTML = `<a href="${link}" target="_blank" class="truncate text-blue-600 hover:underline">${link}</a><button data-index="${index}" class="remove-attachment-btn text-red-500 ml-2"><i class="fas fa-times"></i></button>`;
+                    attachmentsList.appendChild(el);
+                });
+            }
+            taskDetailModal.classList.remove('hidden');
+        }
+        document.getElementById('save-task-details').addEventListener('click', async () => {
+            if (!currentEditingTaskId) return;
+            setSyncStatus('syncing');
+            const notes = document.getElementById('modal-notes').value;
+            // Re-fetch attachments from DOM to ensure they are current
+            const attachmentLinks = Array.from(document.querySelectorAll('#modal-attachments-list a')).map(a => a.href);
+            await updateDoc(doc(db, 'users', currentUserId, 'tasks', currentEditingTaskId), { notes, attachments: attachmentLinks });
+            taskDetailModal.classList.add('hidden');
+            currentEditingTaskId = null;
+            setSyncStatus('synced');
+        });
+        document.getElementById('add-attachment-btn').addEventListener('click', () => {
+            const linkInput = document.getElementById('modal-attachment-link');
+            const link = linkInput.value.trim();
+            if (!link) return;
+            const attachmentsList = document.getElementById('modal-attachments-list');
+            const el = document.createElement('div');
+            el.className = 'flex items-center justify-between bg-gray-100 p-2 rounded';
+            el.innerHTML = `<a href="${link}" target="_blank" class="truncate text-blue-600 hover:underline">${link}</a><button class="remove-attachment-btn text-red-500 ml-2"><i class="fas fa-times"></i></button>`;
+            attachmentsList.appendChild(el);
+            linkInput.value = '';
+        });
+        document.getElementById('modal-attachments-list').addEventListener('click', (e) => {
+            if (e.target.closest('.remove-attachment-btn')) {
+                e.target.closest('.remove-attachment-btn').parentElement.remove();
+            }
+        });
+
+        // --- CALENDAR ---
+        const calendarGrid = document.getElementById('calendar-grid');
+        const monthYearEl = document.getElementById('calendar-month-year');
+        const calendarModal = document.getElementById('calendar-modal');
+        let currentDate = new Date();
+        let calendarModalState = { date: null, color: null };
+
+        function renderCalendar() {
+            calendarGrid.innerHTML = '';
+            const month = currentDate.getMonth();
+            const year = currentDate.getFullYear();
+            monthYearEl.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${year}`;
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const monthId = `${year}-${String(month + 1).padStart(2, '0')}`;
+            const monthBookmarks = calendarBookmarks[monthId] || {};
+
+            const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            daysOfWeek.forEach(day => {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'font-bold text-sm text-gray-500';
+                dayEl.textContent = day;
+                calendarGrid.appendChild(dayEl);
+            });
+
+            for (let i = 0; i < firstDay; i++) {
+                calendarGrid.appendChild(document.createElement('div'));
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayEl = document.createElement('button');
+                dayEl.className = 'calendar-day p-2 rounded-full cursor-pointer border-2 border-transparent';
+                dayEl.textContent = day;
+                dayEl.dataset.day = day;
+                
+                const today = new Date();
+                if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                    dayEl.classList.add('today');
+                }
+                if (monthBookmarks[day]) {
+                    dayEl.classList.add('bookmarked');
+                    dayEl.style.setProperty('--bookmark-color', monthBookmarks[day].color);
+                }
+                calendarGrid.appendChild(dayEl);
+            }
+        }
+        document.getElementById('prev-month-btn').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
+        document.getElementById('next-month-btn').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
+        calendarGrid.addEventListener('click', (e) => {
+            if(e.target.classList.contains('calendar-day')) {
+                const day = e.target.dataset.day;
+                const month = currentDate.getMonth();
+                const year = currentDate.getFullYear();
+                const monthId = `${year}-${String(month + 1).padStart(2, '0')}`;
+                const bookmark = (calendarBookmarks[monthId] && calendarBookmarks[monthId][day]) ? calendarBookmarks[monthId][day] : { note: '', color: 'var(--tag-color-1)' };
+                
+                calendarModalState = { date: {day, month, year}, color: bookmark.color };
+                document.getElementById('calendar-modal-date').textContent = `Bookmark for ${currentDate.toLocaleString('default', { month: 'long' })} ${day}, ${year}`;
+                document.getElementById('calendar-note').value = bookmark.note;
+                
+                document.querySelectorAll('#calendar-color-tags button').forEach(btn => {
+                    btn.classList.toggle('ring-2', btn.dataset.color === bookmark.color);
+                });
+
+                calendarModal.classList.remove('hidden');
+            }
+        });
+        document.getElementById('calendar-color-tags').addEventListener('click', (e) => {
+            if(e.target.tagName === 'BUTTON') {
+                calendarModalState.color = e.target.dataset.color;
+                document.querySelectorAll('#calendar-color-tags button').forEach(btn => btn.classList.remove('ring-2'));
+                e.target.classList.add('ring-2');
+            }
+        });
+        document.getElementById('save-bookmark-btn').addEventListener('click', async () => {
+            const { day, month, year } = calendarModalState.date;
+            const monthId = `${year}-${String(month + 1).padStart(2, '0')}`;
+            const note = document.getElementById('calendar-note').value;
+            const color = calendarModalState.color;
+
+            const calendarRef = doc(db, 'users', currentUserId, 'calendar', monthId);
+            await setDoc(calendarRef, { [day]: { note, color } }, { merge: true });
+            calendarModal.classList.add('hidden');
+        });
+        document.getElementById('delete-bookmark-btn').addEventListener('click', async () => {
+            if (!confirm("Delete this bookmark?")) return;
+            const { day, month, year } = calendarModalState.date;
+            const monthId = `${year}-${String(month + 1).padStart(2, '0')}`;
+            const calendarRef = doc(db, 'users', currentUserId, 'calendar', monthId);
+            await updateDoc(calendarRef, { [day]: deleteField() });
+            calendarModal.classList.add('hidden');
+        });
+
+        // --- STOPWATCH ---
+        let stopwatch = { time: 0, isRunning: false, intervalId: null };
+        const stopwatchDisplay = document.getElementById('stopwatch-display');
+        function initStopwatch(state) {
+            stopwatch = { ...stopwatch, ...state };
+            updateStopwatchDisplay();
+        }
+        function startStopwatch() {
+            if (stopwatch.isRunning) return;
+            stopwatch.isRunning = true;
+            stopwatch.intervalId = setInterval(() => {
+                stopwatch.time += 1000;
+                updateStopwatchDisplay();
+            }, 1000);
+            saveStopwatchState();
+        }
+        function stopStopwatch() {
+            if (!stopwatch.isRunning) return;
+            stopwatch.isRunning = false;
+            clearInterval(stopwatch.intervalId);
+            saveStopwatchState();
+        }
+        function resetStopwatch() {
+            stopStopwatch();
+            stopwatch.time = 0;
+            updateStopwatchDisplay();
+            saveStopwatchState();
+        }
+        function updateStopwatchDisplay() {
+            const date = new Date(stopwatch.time);
+            const hours = String(date.getUTCHours()).padStart(2, '0');
+            const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+            const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+            stopwatchDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        async function saveStopwatchState() {
+            if (!currentUserId) return;
+            const settingsRef = doc(db, 'users', currentUserId, 'settings');
+            await setDoc(settingsRef, { stopwatchState: { time: stopwatch.time, isRunning: false } }, { merge: true });
+        }
+        document.getElementById('stopwatch-start').addEventListener('click', startStopwatch);
+        document.getElementById('stopwatch-stop').addEventListener('click', stopStopwatch);
+        document.getElementById('stopwatch-reset').addEventListener('click', resetStopwatch);
+
+
+        // --- UTILITY & UI ---
+        document.getElementById('sync-btn').addEventListener('click', () => setSyncStatus('syncing', true));
+        function setSyncStatus(status, manual = false) {
+            const syncIcon = document.getElementById('sync-icon');
+            const syncStatus = document.getElementById('sync-status');
+            syncIcon.className = 'fas';
+            switch(status) {
+                case 'syncing':
+                    syncIcon.classList.add('fa-spin', 'fa-sync-alt', 'text-blue-500');
+                    syncStatus.textContent = 'Syncing...';
+                    if (manual) setTimeout(() => setSyncStatus('synced'), 1000);
+                    break;
+                case 'synced':
+                    syncIcon.classList.add('fa-check-circle', 'text-green-500');
+                    syncStatus.textContent = 'Synced';
+                    break;
+                case 'error':
+                    syncIcon.classList.add('fa-exclamation-circle', 'text-red-500');
+                    syncStatus.textContent = 'Error';
+                    break;
+            }
+        }
+        function getDescendants(parentId, includeSelf = false) { /* ... */ }
+        document.getElementById('quit-btn').addEventListener('click', () => {
+            stopStopwatch();
+            signOut(auth).then(() => { window.location.href = 'index.html'; });
+        });
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const theme = btn.dataset.theme;
+                applyTheme(theme);
+                if (currentUserId) {
+                    setDoc(doc(db, 'users', currentUserId, 'settings'), { theme }, { merge: true });
+                }
+            });
+        });
+        function applyTheme(theme) {
+            document.body.className = theme;
+            renderCalendar(); // Re-render calendar to apply theme colors to bookmarks
+        }
+        headerTitle.addEventListener('click', async () => { /* ... */ });
+        function toggleCollapse(event, taskId) { /* ... */ }
+
+        // Initialize on load
+        renderCalendar();
         
-        // --- DATA FETCHING & RENDERING ---
-        
+        // --- Copying original functions that were unchanged to save space in prompt ---
         function getTasks(userId) {
             const tasksRef = collection(db, 'users', userId, 'tasks');
             const q = query(tasksRef, orderBy('order'));
@@ -326,25 +643,6 @@
                 setSyncStatus('error');
             });
         }
-
-        function getSettings(userId) {
-            const settingsRef = doc(db, 'users', userId, 'settings');
-            unsubscribeSettings = onSnapshot(settingsRef, (doc) => {
-                if (doc.exists()) {
-                    const settings = doc.data();
-                    if (settings.theme) {
-                        applyTheme(settings.theme);
-                    }
-                    if(settings.version) {
-                        headerTitle.textContent = `PRODUCTIVITY HUB ${settings.version.toString().padStart(2, '0')}`;
-                    }
-                } else {
-                    // Initialize settings if they don't exist
-                    setDoc(settingsRef, { theme: 'theme-default', version: 1 });
-                }
-            });
-        }
-
         function renderTaskList() {
             taskListEl.innerHTML = '';
             const taskMap = new Map(tasks.map(t => [t.id, {...t, children: []}]));
@@ -359,13 +657,12 @@
                 }
             }
             
-            rootTasks.forEach(task => {
+            rootTasks.sort((a,b) => a.order - b.order).forEach(task => {
                 const taskElement = createTaskElement(task);
                 taskListEl.appendChild(taskElement);
                 renderChildren(task, taskElement);
             });
         }
-
         function renderChildren(parentTask, parentElement) {
             const container = parentElement.querySelector('.children-container');
             if (!container) return;
@@ -377,25 +674,24 @@
                 renderChildren(childTask, childElement);
             });
         }
-
         function createTaskElement(task) {
             const isParent = tasks.some(t => t.parentId === task.id);
             const canHaveChildren = task.level < 3;
 
             const element = document.createElement('div');
-            element.className = `task-item bg-white rounded-lg shadow p-3 level-${task.level} ${task.flagged ? 'flagged' : ''}`;
+            element.className = `task-item card bg-white rounded-lg shadow p-3 level-${task.level} ${task.flagged ? 'flagged' : ''}`;
             element.dataset.id = task.id;
             
             const subjectProgress = task.level === 0 ? getSubjectProgress(task.id) : -1;
 
             element.innerHTML = `
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center flex-grow">
-                        <i class="fas fa-chevron-right text-gray-400 mr-2 cursor-pointer ${isParent ? '' : 'invisible'}"></i>
-                        <input type="checkbox" class="mr-3 h-5 w-5 rounded text-blue-600 focus:ring-blue-500" ${task.completed ? 'checked' : ''}>
-                        <span class="task-name flex-grow ${task.completed ? 'line-through text-gray-500' : ''}">${task.name}</span>
+                    <div class="flex items-center flex-grow min-w-0">
+                        <i class="fas fa-chevron-right text-gray-400 mr-2 cursor-pointer flex-shrink-0 ${isParent ? '' : 'invisible'}"></i>
+                        <input type="checkbox" class="mr-3 h-5 w-5 rounded text-blue-600 focus:ring-blue-500 flex-shrink-0" ${task.completed ? 'checked' : ''}>
+                        <span class="task-name flex-grow truncate ${task.completed ? 'line-through text-gray-500' : ''}">${task.name}</span>
                     </div>
-                    <div class="task-controls flex items-center space-x-3 text-gray-500">
+                    <div class="task-controls flex items-center space-x-3 text-gray-500 flex-shrink-0">
                         ${canHaveChildren ? '<button class="control-btn add-child-btn"><i class="fas fa-plus"></i></button>' : ''}
                         <button class="control-btn flag-btn"><i class="fas fa-flag ${task.flagged ? 'text-yellow-500' : ''}"></i></button>
                         <button class="control-btn notes-btn"><i class="fas fa-note-sticky"></i></button>
@@ -412,7 +708,6 @@
                 <div class="children-container mt-2"></div>
             `;
 
-            // Add event listeners
             element.querySelector('.fa-chevron-right').addEventListener('click', (e) => toggleCollapse(e, task.id));
             element.querySelector('input[type="checkbox"]').addEventListener('change', (e) => toggleComplete(task.id, e.target.checked));
             element.querySelector('.task-name').addEventListener('click', () => editTaskName(element.querySelector('.task-name'), task.id));
@@ -420,137 +715,80 @@
             element.querySelector('.add-child-btn')?.addEventListener('click', () => addChildTask(task.id, task.level + 1));
             element.querySelector('.flag-btn').addEventListener('click', () => toggleFlag(task.id, !task.flagged));
             element.querySelector('.notes-btn').addEventListener('click', () => openTaskDetailModal(task.id));
-
             return element;
         }
-
-
-        // --- TASK MANIPULATION ---
-        
         document.getElementById('add-subject-btn').addEventListener('click', async () => {
             const name = prompt("Enter new subject name:");
             if(name && name.trim()) {
                 setSyncStatus('syncing');
-                await addDoc(collection(db, 'users', currentUserId, 'tasks'), {
-                    name: name.trim(),
-                    completed: false,
-                    level: 0,
-                    parentId: null,
-                    order: tasks.filter(t => t.level === 0).length,
-                    createdAt: serverTimestamp()
-                });
+                await addDoc(collection(db, 'users', currentUserId, 'tasks'), { name: name.trim(), completed: false, level: 0, parentId: null, order: tasks.filter(t => t.level === 0).length, createdAt: serverTimestamp() });
                 setSyncStatus('synced');
             }
         });
-
         async function addChildTask(parentId, level) {
             const name = prompt(`Enter name for new item:`);
             if (name && name.trim()) {
                 setSyncStatus('syncing');
-                const parentTask = tasks.find(t => t.id === parentId);
                 const childrenCount = tasks.filter(t => t.parentId === parentId).length;
-                await addDoc(collection(db, 'users', currentUserId, 'tasks'), {
-                    name: name.trim(),
-                    completed: false,
-                    level: level,
-                    parentId: parentId,
-                    order: childrenCount,
-                    createdAt: serverTimestamp()
-                });
+                await addDoc(collection(db, 'users', currentUserId, 'tasks'), { name: name.trim(), completed: false, level: level, parentId: parentId, order: childrenCount, createdAt: serverTimestamp() });
                 setSyncStatus('synced');
             }
         }
-
         async function editTaskName(element, taskId) {
             const currentName = element.textContent;
             const input = document.createElement('input');
             input.type = 'text';
             input.value = currentName;
             input.className = 'w-full p-1 border rounded';
-            
             element.replaceWith(input);
             input.focus();
-
             input.addEventListener('blur', async () => {
                 const newName = input.value.trim();
                 if (newName && newName !== currentName) {
                     setSyncStatus('syncing');
                     await updateDoc(doc(db, 'users', currentUserId, 'tasks', taskId), { name: newName });
-                    setSyncStatus('synced');
                 }
-                // The onSnapshot listener will handle re-rendering
+                // onSnapshot will re-render
             });
-
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    input.blur();
-                }
-            });
+            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); });
         }
-
         async function deleteTask(taskId) {
             if (!confirm("Are you sure you want to delete this task and all its sub-tasks?")) return;
-
             setSyncStatus('syncing');
             const batch = writeBatch(db);
-            const descendants = getDescendants(taskId, true);
-            descendants.forEach(task => {
+            getDescendants(taskId, true).forEach(task => {
                 batch.delete(doc(db, 'users', currentUserId, 'tasks', task.id));
             });
             await batch.commit();
             setSyncStatus('synced');
         }
-        
         async function toggleFlag(taskId, flagged) {
             setSyncStatus('syncing');
             await updateDoc(doc(db, 'users', currentUserId, 'tasks', taskId), { flagged });
             setSyncStatus('synced');
         }
-
-        // --- COMPLETION LOGIC ---
-
         async function toggleComplete(taskId, isCompleted) {
             setSyncStatus('syncing');
             const batch = writeBatch(db);
             const task = tasks.find(t => t.id === taskId);
-            
-            // Top-down completion
             const descendants = getDescendants(taskId, false);
-            descendants.forEach(d => {
-                batch.update(doc(db, 'users', currentUserId, 'tasks', d.id), { completed: isCompleted });
-            });
             batch.update(doc(db, 'users', currentUserId, 'tasks', taskId), { completed: isCompleted });
-
-            // Bottom-up completion/un-completion
+            descendants.forEach(d => batch.update(doc(db, 'users', currentUserId, 'tasks', d.id), { completed: isCompleted }));
             let currentParentId = task.parentId;
             while(currentParentId) {
                 const parent = tasks.find(t => t.id === currentParentId);
-                const siblings = tasks.filter(t => t.parentId === currentParentId);
-                
                 if(isCompleted) {
-                    // Check if all siblings (including current) are now complete
-                    const allSiblingsCompleted = siblings.every(s => {
-                        const descendantIds = getDescendants(s.id, true).map(d => d.id);
-                        const selfAndDescendants = [s, ...tasks.filter(t => descendantIds.includes(t.id))];
-                        return selfAndDescendants.every(item => item.completed || item.id === taskId);
-                    });
-
-                    if (allSiblingsCompleted) {
-                         batch.update(doc(db, 'users', currentUserId, 'tasks', currentParentId), { completed: true });
-                    }
+                    const siblings = tasks.filter(t => t.parentId === currentParentId);
+                    const allComplete = siblings.every(s => tasks.find(ts => ts.id === s.id)?.completed);
+                    if (allComplete) batch.update(doc(db, 'users', currentUserId, 'tasks', currentParentId), { completed: true });
                 } else {
-                    // If un-checking, un-check all parents
                     batch.update(doc(db, 'users', currentUserId, 'tasks', currentParentId), { completed: false });
                 }
                 currentParentId = parent.parentId;
             }
-            
             await batch.commit();
             setSyncStatus('synced');
         }
-
-
-        // --- PROGRESS BARS ---
         function updateMasterProgress() {
             const subjects = tasks.filter(t => t.level === 0);
             if (subjects.length === 0) {
@@ -561,174 +799,49 @@
             const progress = (completedSubjects / subjects.length) * 100;
             document.getElementById('master-progress-bar').style.width = `${progress}%`;
         }
-
         function getSubjectProgress(subjectId) {
             const descendants = getDescendants(subjectId, false);
-            if (descendants.length === 0) {
-                const subject = tasks.find(t => t.id === subjectId);
-                return subject && subject.completed ? 100 : 0;
-            }
+            if (descendants.length === 0) return tasks.find(t => t.id === subjectId)?.completed ? 100 : 0;
             const topics = descendants.filter(d => !tasks.some(t => t.parentId === d.id));
-            if (topics.length === 0) return 0;
-
+            if (topics.length === 0) return tasks.find(t => t.id === subjectId)?.completed ? 100 : 0;
             const completedTopics = topics.filter(t => t.completed).length;
             return (completedTopics / topics.length) * 100;
         }
-        
-        // --- BULK ADD MODAL ---
-        const bulkAddModal = document.getElementById('bulk-add-modal');
-        document.getElementById('bulk-add-btn').addEventListener('click', () => bulkAddModal.classList.remove('hidden'));
-        document.getElementById('cancel-bulk-add').addEventListener('click', () => bulkAddModal.classList.add('hidden'));
-        document.getElementById('confirm-bulk-add').addEventListener('click', handleBulkAdd);
-
         async function handleBulkAdd() {
             const text = document.getElementById('bulk-add-textarea').value;
             if (!text.trim()) return;
-
             setSyncStatus('syncing');
             const lines = text.split('\n').filter(line => line.trim() !== '');
             const batch = writeBatch(db);
             const parentStack = [];
             let lastLevel = -1;
-            
             const rootOrder = tasks.filter(t => t.level === 0).length;
-
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 const indentation = line.match(/^\s*/)[0].length;
                 const name = line.trim();
-                const level = Math.floor(indentation / 2); // Assuming 2 spaces per indent level
-
+                const level = Math.floor(indentation / 2);
                 while (level <= lastLevel && parentStack.length > 0) {
                     parentStack.pop();
                     lastLevel--;
                 }
-                
                 const parentId = parentStack.length > 0 ? parentStack[parentStack.length - 1] : null;
-                
-                const siblingCount = tasks.filter(t => t.parentId === parentId).length + 
-                                     lines.slice(0, i).filter(l => (l.match(/^\s*/)[0].length / 2) === level).length;
-
                 const newDocRef = doc(collection(db, 'users', currentUserId, 'tasks'));
-                batch.set(newDocRef, {
-                    name: name,
-                    completed: false,
-                    level: parentId ? tasks.find(t => t.id === parentId).level + 1 : 0,
-                    parentId: parentId,
-                    order: parentId ? siblingCount : rootOrder + i,
-                    createdAt: serverTimestamp()
-                });
+                batch.set(newDocRef, { name, completed: false, level: parentId ? tasks.find(t => t.id === parentId).level + 1 : 0, parentId, order: 0, createdAt: serverTimestamp() });
                 parentStack.push(newDocRef.id);
                 lastLevel = level;
             }
-
             await batch.commit();
             document.getElementById('bulk-add-textarea').value = '';
             bulkAddModal.classList.add('hidden');
             setSyncStatus('synced');
         }
-
-        // --- TASK DETAIL MODAL ---
-        const taskDetailModal = document.getElementById('task-detail-modal');
-        let currentEditingTaskId = null;
-
-        async function openTaskDetailModal(taskId) {
-            currentEditingTaskId = taskId;
-            const task = tasks.find(t => t.id === taskId);
-            if (!task) return;
-
-            document.getElementById('modal-task-name').textContent = task.name;
-            document.getElementById('modal-notes').value = task.notes || '';
-            
-            // Render attachments
-            const attachmentsList = document.getElementById('modal-attachments-list');
-            attachmentsList.innerHTML = '';
-            if (task.attachments) {
-                task.attachments.forEach((link, index) => {
-                    const el = document.createElement('div');
-                    el.className = 'flex items-center justify-between bg-gray-100 p-2 rounded';
-                    el.innerHTML = `<a href="${link}" target="_blank" class="truncate text-blue-600 hover:underline">${link}</a><button data-index="${index}" class="remove-attachment-btn text-red-500 ml-2"><i class="fas fa-times"></i></button>`;
-                    attachmentsList.appendChild(el);
-                });
-            }
-
-            taskDetailModal.classList.remove('hidden');
-        }
-        
-        document.getElementById('save-task-details').addEventListener('click', async () => {
-            if (!currentEditingTaskId) return;
-
-            setSyncStatus('syncing');
-            const notes = document.getElementById('modal-notes').value;
-            const task = tasks.find(t => t.id === currentEditingTaskId);
-            const attachments = task.attachments || [];
-
-            await updateDoc(doc(db, 'users', currentUserId, 'tasks', currentEditingTaskId), {
-                notes,
-                attachments
-            });
-            
-            taskDetailModal.classList.add('hidden');
-            currentEditingTaskId = null;
-            setSyncStatus('synced');
-        });
-
-        document.getElementById('add-attachment-btn').addEventListener('click', async () => {
-            const linkInput = document.getElementById('modal-attachment-link');
-            const link = linkInput.value.trim();
-            if (!link) return;
-            
-            const task = tasks.find(t => t.id === currentEditingTaskId);
-            const newAttachments = [...(task.attachments || []), link];
-            
-            await updateDoc(doc(db, 'users', currentUserId, 'tasks', currentEditingTaskId), { attachments: newAttachments });
-            linkInput.value = '';
-            openTaskDetailModal(currentEditingTaskId); // Re-render modal
-        });
-
-        document.getElementById('modal-attachments-list').addEventListener('click', async (e) => {
-            if (e.target.closest('.remove-attachment-btn')) {
-                const button = e.target.closest('.remove-attachment-btn');
-                const index = parseInt(button.dataset.index);
-                
-                const task = tasks.find(t => t.id === currentEditingTaskId);
-                const newAttachments = task.attachments.filter((_, i) => i !== index);
-
-                await updateDoc(doc(db, 'users', currentUserId, 'tasks', currentEditingTaskId), { attachments: newAttachments });
-                openTaskDetailModal(currentEditingTaskId); // Re-render modal
-            }
-        });
-
-
-        // --- UTILITY & UI ---
-        
-        function setSyncStatus(status) {
-            const syncIcon = document.getElementById('sync-icon');
-            const syncStatus = document.getElementById('sync-status');
-            syncIcon.className = 'fas';
-            switch(status) {
-                case 'syncing':
-                    syncIcon.classList.add('fa-spin', 'fa-sync-alt', 'text-blue-500');
-                    syncStatus.textContent = 'Syncing...';
-                    break;
-                case 'synced':
-                    syncIcon.classList.add('fa-check-circle', 'text-green-500');
-                    syncStatus.textContent = 'Synced';
-                    break;
-                case 'error':
-                    syncIcon.classList.add('fa-exclamation-circle', 'text-red-500');
-                    syncStatus.textContent = 'Error';
-                    break;
-            }
-        }
-        
         function getDescendants(parentId, includeSelf = false) {
             let descendants = [];
             if(includeSelf) {
                 const self = tasks.find(t => t.id === parentId);
                 if(self) descendants.push(self);
             }
-
             const children = tasks.filter(t => t.parentId === parentId);
             for (const child of children) {
                 descendants.push(child);
@@ -736,48 +849,20 @@
             }
             return descendants;
         }
-
-        document.getElementById('quit-btn').addEventListener('click', () => {
-            signOut(auth).then(() => {
-                window.location.href = 'index.html';
-            }).catch((error) => {
-                console.error('Sign out error', error);
-            });
-        });
-
-        // Theme switcher
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const theme = btn.dataset.theme;
-                applyTheme(theme);
-                if (currentUserId) {
-                    setDoc(doc(db, 'users', currentUserId, 'settings'), { theme }, { merge: true });
-                }
-            });
-        });
-
-        function applyTheme(theme) {
-            document.body.className = theme;
-        }
-        
-        // Header version update simulation (for demo)
         headerTitle.addEventListener('click', async () => {
             if(!currentUserId) return;
             const settingsDoc = await getDoc(doc(db, 'users', currentUserId, 'settings'));
             let currentVersion = settingsDoc.exists() ? settingsDoc.data().version || 1 : 1;
             await setDoc(doc(db, 'users', currentUserId, 'settings'), { version: currentVersion + 1 }, { merge: true });
         });
-
         function toggleCollapse(event, taskId) {
             const icon = event.target;
             const taskElement = icon.closest('.task-item');
             const childrenContainer = taskElement.querySelector('.children-container');
-            
             icon.classList.toggle('fa-chevron-down');
             icon.classList.toggle('fa-chevron-right');
             childrenContainer.classList.toggle('hidden');
         }
-
     </script>
 </body>
 </html>
