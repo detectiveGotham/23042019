@@ -152,7 +152,7 @@
     <main id="app" class="hidden">
         <!-- Header -->
         <header class="header sticky top-0 z-30 px-4 py-2 flex items-center justify-between shadow-md">
-            <h1 id="header-title" class="text-xl font-bold tracking-widest">PRODUCTIVITY HUB 02</h1>
+            <h1 id="header-title" class="text-xl font-bold tracking-widest">PRODUCTIVITY HUB 03</h1>
             <div class="flex items-center space-x-4">
                 <div class="theme-selector flex items-center space-x-2">
                     <button data-theme="theme-default" class="theme-btn w-6 h-6 rounded-full bg-blue-500 border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"></button>
@@ -284,7 +284,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, onSnapshot, doc, updateDoc, deleteDoc, writeBatch, serverTimestamp, getDoc, setDoc, orderBy, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, doc, updateDoc, deleteDoc, writeBatch, serverTimestamp, getDoc, setDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCKcC_TPxyP9-ErqUTZHWc4Il8llwpwUg8",
@@ -315,17 +315,26 @@
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUserId = user.uid;
-                appEl.classList.remove('hidden');
-                loaderEl.style.display = 'none';
-                accessDeniedEl.classList.add('hidden');
                 
                 if (unsubscribeTasks) unsubscribeTasks();
                 if (unsubscribeSettings) unsubscribeSettings();
                 if (unsubscribeCalendar) unsubscribeCalendar();
 
-                getTasks(user.uid);
-                getSettings(user.uid);
-                getCalendarData(user.uid);
+                // Fetch all data, then show the app
+                Promise.all([
+                    getTasks(user.uid),
+                    getSettings(user.uid),
+                    getCalendarData(user.uid)
+                ]).then(() => {
+                    appEl.classList.remove('hidden');
+                    loaderEl.style.display = 'none';
+                    accessDeniedEl.classList.add('hidden');
+                }).catch(error => {
+                    console.error("Error during initialization:", error);
+                    // Optionally show an error message to the user
+                    loaderEl.innerHTML = '<p class="text-red-500">Failed to load data. Please try again later.</p>';
+                });
+
             } else {
                 currentUserId = null;
                 appEl.classList.add('hidden');
@@ -338,39 +347,133 @@
             }
         });
 
-        // --- DATA FETCHING ---
-        function getTasks(userId) { /* ... same as before ... */ }
+        // --- DATA FETCHING (returns a Promise) ---
+        function getTasks(userId) {
+            return new Promise((resolve, reject) => {
+                const tasksRef = collection(db, 'users', userId, 'tasks');
+                // FIX: Removed orderBy from the query. Sorting will be done client-side.
+                const q = query(tasksRef);
+                
+                setSyncStatus('syncing');
+                unsubscribeTasks = onSnapshot(q, (snapshot) => {
+                    tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderTaskList();
+                    updateMasterProgress();
+                    setSyncStatus('synced');
+                    resolve(); // Resolve the promise once data is loaded
+                }, (error) => {
+                    console.error("Error fetching tasks:", error);
+                    setSyncStatus('error');
+                    reject(error); // Reject the promise on error
+                });
+            });
+        }
         function getSettings(userId) {
-            const settingsRef = doc(db, 'users', userId, 'settings');
-            unsubscribeSettings = onSnapshot(settingsRef, (doc) => {
-                if (doc.exists()) {
-                    const settings = doc.data();
-                    if (settings.theme) applyTheme(settings.theme);
-                    if(settings.version) headerTitle.textContent = `PRODUCTIVITY HUB ${settings.version.toString().padStart(2, '0')}`;
-                    if(settings.stopwatchState) initStopwatch(settings.stopwatchState);
-                } else {
-                    setDoc(settingsRef, { theme: 'theme-default', version: 2, stopwatchState: { time: 0, isRunning: false } });
-                }
+             return new Promise((resolve, reject) => {
+                const settingsRef = doc(db, 'users', userId, 'settings');
+                unsubscribeSettings = onSnapshot(settingsRef, (doc) => {
+                    if (doc.exists()) {
+                        const settings = doc.data();
+                        if (settings.theme) applyTheme(settings.theme);
+                        if(settings.version) headerTitle.textContent = `PRODUCTIVITY HUB ${settings.version.toString().padStart(2, '0')}`;
+                        if(settings.stopwatchState) initStopwatch(settings.stopwatchState);
+                    } else {
+                        // Initialize settings if they don't exist
+                        setDoc(settingsRef, { theme: 'theme-default', version: 3, stopwatchState: { time: 0, isRunning: false } });
+                    }
+                    resolve();
+                }, (error) => {
+                    console.error("Error fetching settings:", error);
+                    reject(error);
+                });
             });
         }
         function getCalendarData(userId) {
-            const calendarRef = collection(db, 'users', userId, 'calendar');
-            unsubscribeCalendar = onSnapshot(calendarRef, (snapshot) => {
-                calendarBookmarks = {};
-                snapshot.docs.forEach(doc => {
-                    calendarBookmarks[doc.id] = doc.data();
+            return new Promise((resolve, reject) => {
+                const calendarRef = collection(db, 'users', userId, 'calendar');
+                unsubscribeCalendar = onSnapshot(calendarRef, (snapshot) => {
+                    calendarBookmarks = {};
+                    snapshot.docs.forEach(doc => {
+                        calendarBookmarks[doc.id] = doc.data();
+                    });
+                    renderCalendar();
+                    resolve();
+                }, (error) => {
+                    console.error("Error fetching calendar data:", error);
+                    reject(error);
                 });
-                renderCalendar();
             });
         }
 
         // --- RENDERING ---
-        function renderTaskList() { /* ... same as before ... */ }
+        function renderTaskList() {
+            taskListEl.innerHTML = '';
+            const taskMap = new Map(tasks.map(t => [t.id, {...t, children: []}]));
+            
+            const rootTasks = [];
+            for(const task of taskMap.values()){
+                if(task.parentId){
+                    const parent = taskMap.get(task.parentId);
+                    if(parent) parent.children.push(task);
+                } else {
+                    rootTasks.push(task);
+                }
+            }
+            
+            // FIX: Sort root tasks client-side
+            rootTasks.sort((a,b) => (a.order || 0) - (b.order || 0)).forEach(task => {
+                const taskElement = createTaskElement(task);
+                taskListEl.appendChild(taskElement);
+                renderChildren(task, taskElement);
+            });
+        }
+        function renderChildren(parentTask, parentElement) {
+            const container = parentElement.querySelector('.children-container');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            // FIX: Sort child tasks client-side
+            parentTask.children.sort((a, b) => (a.order || 0) - (b.order || 0)).forEach(childTask => {
+                const childElement = createTaskElement(childTask);
+                container.appendChild(childElement);
+                renderChildren(childTask, childElement);
+            });
+        }
         function createTaskElement(task) { /* ... same as before ... */ }
 
         // --- TASK MANIPULATION ---
-        document.getElementById('add-subject-btn').addEventListener('click', async () => { /* ... */ });
-        async function addChildTask(parentId, level) { /* ... */ }
+        document.getElementById('add-subject-btn').addEventListener('click', async () => {
+            const name = prompt("Enter new subject name:");
+            if(name && name.trim()) {
+                setSyncStatus('syncing');
+                const rootTasks = tasks.filter(t => !t.parentId);
+                await addDoc(collection(db, 'users', currentUserId, 'tasks'), { 
+                    name: name.trim(), 
+                    completed: false, 
+                    level: 0, 
+                    parentId: null, 
+                    order: rootTasks.length, // Assign order based on current root tasks
+                    createdAt: serverTimestamp() 
+                });
+                setSyncStatus('synced');
+            }
+        });
+        async function addChildTask(parentId, level) {
+            const name = prompt(`Enter name for new item:`);
+            if (name && name.trim()) {
+                setSyncStatus('syncing');
+                const childrenCount = tasks.filter(t => t.parentId === parentId).length;
+                await addDoc(collection(db, 'users', currentUserId, 'tasks'), { 
+                    name: name.trim(), 
+                    completed: false, 
+                    level: level, 
+                    parentId: parentId, 
+                    order: childrenCount, 
+                    createdAt: serverTimestamp() 
+                });
+                setSyncStatus('synced');
+            }
+        }
         async function editTaskName(element, taskId) { /* ... */ }
         async function deleteTask(taskId) { /* ... */ }
         async function toggleFlag(taskId, flagged) { /* ... */ }
@@ -396,6 +499,186 @@
         // Task Detail Modal
         const taskDetailModal = document.getElementById('task-detail-modal');
         let currentEditingTaskId = null;
+        async function openTaskDetailModal(taskId) { /* ... */ }
+        document.getElementById('save-task-details').addEventListener('click', async () => { /* ... */ });
+        document.getElementById('add-attachment-btn').addEventListener('click', () => { /* ... */ });
+        document.getElementById('modal-attachments-list').addEventListener('click', (e) => { /* ... */ });
+
+        // --- CALENDAR ---
+        const calendarGrid = document.getElementById('calendar-grid');
+        const monthYearEl = document.getElementById('calendar-month-year');
+        const calendarModal = document.getElementById('calendar-modal');
+        let currentDate = new Date();
+        let calendarModalState = { date: null, color: null };
+        function renderCalendar() { /* ... */ }
+        document.getElementById('prev-month-btn').addEventListener('click', () => { /* ... */ });
+        document.getElementById('next-month-btn').addEventListener('click', () => { /* ... */ });
+        calendarGrid.addEventListener('click', (e) => { /* ... */ });
+        document.getElementById('calendar-color-tags').addEventListener('click', (e) => { /* ... */ });
+        document.getElementById('save-bookmark-btn').addEventListener('click', async () => { /* ... */ });
+        document.getElementById('delete-bookmark-btn').addEventListener('click', async () => { /* ... */ });
+
+        // --- STOPWATCH ---
+        let stopwatch = { time: 0, isRunning: false, intervalId: null };
+        const stopwatchDisplay = document.getElementById('stopwatch-display');
+        function initStopwatch(state) { /* ... */ }
+        function startStopwatch() { /* ... */ }
+        function stopStopwatch() { /* ... */ }
+        function resetStopwatch() { /* ... */ }
+        function updateStopwatchDisplay() { /* ... */ }
+        async function saveStopwatchState() { /* ... */ }
+        document.getElementById('stopwatch-start').addEventListener('click', startStopwatch);
+        document.getElementById('stopwatch-stop').addEventListener('click', stopStopwatch);
+        document.getElementById('stopwatch-reset').addEventListener('click', resetStopwatch);
+
+
+        // --- UTILITY & UI ---
+        document.getElementById('sync-btn').addEventListener('click', () => setSyncStatus('syncing', true));
+        function setSyncStatus(status, manual = false) { /* ... */ }
+        function getDescendants(parentId, includeSelf = false) { /* ... */ }
+        document.getElementById('quit-btn').addEventListener('click', () => { /* ... */ });
+        document.querySelectorAll('.theme-btn').forEach(btn => { /* ... */ });
+        function applyTheme(theme) { /* ... */ }
+        headerTitle.addEventListener('click', async () => { /* ... */ });
+        function toggleCollapse(event, taskId) { /* ... */ }
+
+        // Initialize on load
+        renderCalendar();
+        
+        // --- Full function definitions to avoid breaking the app ---
+        function createTaskElement(task) {
+            const isParent = tasks.some(t => t.parentId === task.id);
+            const canHaveChildren = task.level < 3;
+            const element = document.createElement('div');
+            element.className = `task-item card bg-white rounded-lg shadow p-3 level-${task.level} ${task.flagged ? 'flagged' : ''}`;
+            element.dataset.id = task.id;
+            const subjectProgress = task.level === 0 ? getSubjectProgress(task.id) : -1;
+            element.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center flex-grow min-w-0">
+                        <i class="fas fa-chevron-right text-gray-400 mr-2 cursor-pointer flex-shrink-0 ${isParent ? '' : 'invisible'} ${task.collapsed ? '' : 'fa-chevron-down'}"></i>
+                        <input type="checkbox" class="mr-3 h-5 w-5 rounded text-blue-600 focus:ring-blue-500 flex-shrink-0" ${task.completed ? 'checked' : ''}>
+                        <span class="task-name flex-grow truncate ${task.completed ? 'line-through text-gray-500' : ''}">${task.name}</span>
+                    </div>
+                    <div class="task-controls flex items-center space-x-3 text-gray-500 flex-shrink-0">
+                        ${canHaveChildren ? '<button class="control-btn add-child-btn"><i class="fas fa-plus"></i></button>' : ''}
+                        <button class="control-btn flag-btn"><i class="fas fa-flag ${task.flagged ? 'text-yellow-500' : ''}"></i></button>
+                        <button class="control-btn notes-btn"><i class="fas fa-note-sticky"></i></button>
+                        <button class="control-btn delete-btn"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                ${task.level === 0 ? `<div class="mt-2 pl-8"><div class="progress-container w-full bg-gray-200 rounded-full h-2.5"><div class="progress-bar h-2.5 rounded-full" style="width: ${subjectProgress}%;"></div></div></div>` : ''}
+                <div class="children-container mt-2 ${task.collapsed ? 'hidden' : ''}"></div>`;
+            element.querySelector('.fa-chevron-right').addEventListener('click', (e) => toggleCollapse(e, task.id));
+            element.querySelector('input[type="checkbox"]').addEventListener('change', (e) => toggleComplete(task.id, e.target.checked));
+            element.querySelector('.task-name').addEventListener('click', () => editTaskName(element.querySelector('.task-name'), task.id));
+            element.querySelector('.delete-btn')?.addEventListener('click', () => deleteTask(task.id));
+            element.querySelector('.add-child-btn')?.addEventListener('click', () => addChildTask(task.id, task.level + 1));
+            element.querySelector('.flag-btn').addEventListener('click', () => toggleFlag(task.id, !task.flagged));
+            element.querySelector('.notes-btn').addEventListener('click', () => openTaskDetailModal(task.id));
+            return element;
+        }
+        async function editTaskName(element, taskId) {
+            const currentName = element.textContent;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentName;
+            input.className = 'w-full p-1 border rounded';
+            element.replaceWith(input);
+            input.focus();
+            const save = async () => {
+                const newName = input.value.trim();
+                if (newName && newName !== currentName) {
+                    setSyncStatus('syncing');
+                    await updateDoc(doc(db, 'users', currentUserId, 'tasks', taskId), { name: newName });
+                } else {
+                    renderTaskList(); // Re-render to restore original name if unchanged
+                }
+            };
+            input.addEventListener('blur', save);
+            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); });
+        }
+        async function deleteTask(taskId) {
+            if (!confirm("Are you sure you want to delete this task and all its sub-tasks?")) return;
+            setSyncStatus('syncing');
+            const batch = writeBatch(db);
+            getDescendants(taskId, true).forEach(task => batch.delete(doc(db, 'users', currentUserId, 'tasks', task.id)));
+            await batch.commit();
+            setSyncStatus('synced');
+        }
+        async function toggleFlag(taskId, flagged) {
+            setSyncStatus('syncing');
+            await updateDoc(doc(db, 'users', currentUserId, 'tasks', taskId), { flagged });
+            setSyncStatus('synced');
+        }
+        async function toggleComplete(taskId, isCompleted) {
+            setSyncStatus('syncing');
+            const batch = writeBatch(db);
+            const task = tasks.find(t => t.id === taskId);
+            getDescendants(taskId, true).forEach(d => batch.update(doc(db, 'users', currentUserId, 'tasks', d.id), { completed: isCompleted }));
+            let currentParentId = task.parentId;
+            while(currentParentId) {
+                const parent = tasks.find(t => t.id === currentParentId);
+                if (isCompleted) {
+                    const siblings = tasks.filter(t => t.parentId === currentParentId);
+                    const allSiblingsNowComplete = siblings.every(s => s.id === task.id || s.completed);
+                    if (allSiblingsNowComplete) batch.update(doc(db, 'users', currentUserId, 'tasks', currentParentId), { completed: true });
+                } else {
+                    batch.update(doc(db, 'users', currentUserId, 'tasks', currentParentId), { completed: false });
+                }
+                currentParentId = parent.parentId;
+            }
+            await batch.commit();
+            setSyncStatus('synced');
+        }
+        function updateMasterProgress() {
+            const subjects = tasks.filter(t => t.level === 0);
+            if (subjects.length === 0) {
+                document.getElementById('master-progress-bar').style.width = '0%';
+                return;
+            }
+            const completedSubjects = subjects.filter(s => getSubjectProgress(s.id) === 100).length;
+            const progress = (completedSubjects / subjects.length) * 100;
+            document.getElementById('master-progress-bar').style.width = `${progress}%`;
+        }
+        function getSubjectProgress(subjectId) {
+            const descendants = getDescendants(subjectId, false);
+            const topics = descendants.filter(d => !tasks.some(t => t.parentId === d.id));
+            if (topics.length === 0) {
+                const subject = tasks.find(t => t.id === subjectId);
+                return subject && subject.completed ? 100 : 0;
+            }
+            const completedTopics = topics.filter(t => t.completed).length;
+            return (completedTopics / topics.length) * 100;
+        }
+        async function handleBulkAdd() {
+            const text = document.getElementById('bulk-add-textarea').value;
+            if (!text.trim()) return;
+            setSyncStatus('syncing');
+            const lines = text.split('\n').filter(line => line.trim() !== '');
+            const batch = writeBatch(db);
+            const parentStack = [{id: null, level: -1}];
+            let rootOrder = tasks.filter(t => !t.parentId).length;
+            for (const line of lines) {
+                const indentation = line.match(/^\s*/)[0].length;
+                const name = line.trim();
+                const level = Math.floor(indentation / 2);
+                while (level <= parentStack[parentStack.length - 1].level) {
+                    parentStack.pop();
+                }
+                const parent = parentStack[parentStack.length - 1];
+                const parentId = parent.id;
+                const parentLevel = parent.level;
+                const newDocRef = doc(collection(db, 'users', currentUserId, 'tasks'));
+                const order = parentId ? tasks.filter(t => t.parentId === parentId).length : rootOrder++;
+                batch.set(newDocRef, { name, completed: false, level: parentLevel + 1, parentId, order, createdAt: serverTimestamp() });
+                parentStack.push({id: newDocRef.id, level});
+            }
+            await batch.commit();
+            document.getElementById('bulk-add-textarea').value = '';
+            bulkAddModal.classList.add('hidden');
+            setSyncStatus('synced');
+        }
         async function openTaskDetailModal(taskId) {
             currentEditingTaskId = taskId;
             const task = tasks.find(t => t.id === taskId);
@@ -405,10 +688,10 @@
             const attachmentsList = document.getElementById('modal-attachments-list');
             attachmentsList.innerHTML = '';
             if (task.attachments) {
-                task.attachments.forEach((link, index) => {
+                task.attachments.forEach((link) => {
                     const el = document.createElement('div');
                     el.className = 'flex items-center justify-between bg-gray-100 p-2 rounded';
-                    el.innerHTML = `<a href="${link}" target="_blank" class="truncate text-blue-600 hover:underline">${link}</a><button data-index="${index}" class="remove-attachment-btn text-red-500 ml-2"><i class="fas fa-times"></i></button>`;
+                    el.innerHTML = `<a href="${link}" target="_blank" class="truncate text-blue-600 hover:underline">${link}</a><button class="remove-attachment-btn text-red-500 ml-2"><i class="fas fa-times"></i></button>`;
                     attachmentsList.appendChild(el);
                 });
             }
@@ -418,7 +701,6 @@
             if (!currentEditingTaskId) return;
             setSyncStatus('syncing');
             const notes = document.getElementById('modal-notes').value;
-            // Re-fetch attachments from DOM to ensure they are current
             const attachmentLinks = Array.from(document.querySelectorAll('#modal-attachments-list a')).map(a => a.href);
             await updateDoc(doc(db, 'users', currentUserId, 'tasks', currentEditingTaskId), { notes, attachments: attachmentLinks });
             taskDetailModal.classList.add('hidden');
@@ -441,25 +723,15 @@
                 e.target.closest('.remove-attachment-btn').parentElement.remove();
             }
         });
-
-        // --- CALENDAR ---
-        const calendarGrid = document.getElementById('calendar-grid');
-        const monthYearEl = document.getElementById('calendar-month-year');
-        const calendarModal = document.getElementById('calendar-modal');
-        let currentDate = new Date();
-        let calendarModalState = { date: null, color: null };
-
         function renderCalendar() {
             calendarGrid.innerHTML = '';
             const month = currentDate.getMonth();
             const year = currentDate.getFullYear();
             monthYearEl.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${year}`;
-            
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const monthId = `${year}-${String(month + 1).padStart(2, '0')}`;
             const monthBookmarks = calendarBookmarks[monthId] || {};
-
             const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             daysOfWeek.forEach(day => {
                 const dayEl = document.createElement('div');
@@ -467,17 +739,14 @@
                 dayEl.textContent = day;
                 calendarGrid.appendChild(dayEl);
             });
-
             for (let i = 0; i < firstDay; i++) {
                 calendarGrid.appendChild(document.createElement('div'));
             }
-
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayEl = document.createElement('button');
                 dayEl.className = 'calendar-day p-2 rounded-full cursor-pointer border-2 border-transparent';
                 dayEl.textContent = day;
                 dayEl.dataset.day = day;
-                
                 const today = new Date();
                 if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
                     dayEl.classList.add('today');
@@ -498,15 +767,12 @@
                 const year = currentDate.getFullYear();
                 const monthId = `${year}-${String(month + 1).padStart(2, '0')}`;
                 const bookmark = (calendarBookmarks[monthId] && calendarBookmarks[monthId][day]) ? calendarBookmarks[monthId][day] : { note: '', color: 'var(--tag-color-1)' };
-                
                 calendarModalState = { date: {day, month, year}, color: bookmark.color };
                 document.getElementById('calendar-modal-date').textContent = `Bookmark for ${currentDate.toLocaleString('default', { month: 'long' })} ${day}, ${year}`;
                 document.getElementById('calendar-note').value = bookmark.note;
-                
                 document.querySelectorAll('#calendar-color-tags button').forEach(btn => {
                     btn.classList.toggle('ring-2', btn.dataset.color === bookmark.color);
                 });
-
                 calendarModal.classList.remove('hidden');
             }
         });
@@ -522,7 +788,6 @@
             const monthId = `${year}-${String(month + 1).padStart(2, '0')}`;
             const note = document.getElementById('calendar-note').value;
             const color = calendarModalState.color;
-
             const calendarRef = doc(db, 'users', currentUserId, 'calendar', monthId);
             await setDoc(calendarRef, { [day]: { note, color } }, { merge: true });
             calendarModal.classList.add('hidden');
@@ -535,12 +800,9 @@
             await updateDoc(calendarRef, { [day]: deleteField() });
             calendarModal.classList.add('hidden');
         });
-
-        // --- STOPWATCH ---
-        let stopwatch = { time: 0, isRunning: false, intervalId: null };
-        const stopwatchDisplay = document.getElementById('stopwatch-display');
         function initStopwatch(state) {
             stopwatch = { ...stopwatch, ...state };
+            if (stopwatch.isRunning) startStopwatch(); // Resume if it was running
             updateStopwatchDisplay();
         }
         function startStopwatch() {
@@ -553,7 +815,6 @@
             saveStopwatchState();
         }
         function stopStopwatch() {
-            if (!stopwatch.isRunning) return;
             stopwatch.isRunning = false;
             clearInterval(stopwatch.intervalId);
             saveStopwatchState();
@@ -574,15 +835,8 @@
         async function saveStopwatchState() {
             if (!currentUserId) return;
             const settingsRef = doc(db, 'users', currentUserId, 'settings');
-            await setDoc(settingsRef, { stopwatchState: { time: stopwatch.time, isRunning: false } }, { merge: true });
+            await setDoc(settingsRef, { stopwatchState: { time: stopwatch.time, isRunning: stopwatch.isRunning } }, { merge: true });
         }
-        document.getElementById('stopwatch-start').addEventListener('click', startStopwatch);
-        document.getElementById('stopwatch-stop').addEventListener('click', stopStopwatch);
-        document.getElementById('stopwatch-reset').addEventListener('click', resetStopwatch);
-
-
-        // --- UTILITY & UI ---
-        document.getElementById('sync-btn').addEventListener('click', () => setSyncStatus('syncing', true));
         function setSyncStatus(status, manual = false) {
             const syncIcon = document.getElementById('sync-icon');
             const syncStatus = document.getElementById('sync-status');
@@ -603,239 +857,6 @@
                     break;
             }
         }
-        function getDescendants(parentId, includeSelf = false) { /* ... */ }
-        document.getElementById('quit-btn').addEventListener('click', () => {
-            stopStopwatch();
-            signOut(auth).then(() => { window.location.href = 'index.html'; });
-        });
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const theme = btn.dataset.theme;
-                applyTheme(theme);
-                if (currentUserId) {
-                    setDoc(doc(db, 'users', currentUserId, 'settings'), { theme }, { merge: true });
-                }
-            });
-        });
-        function applyTheme(theme) {
-            document.body.className = theme;
-            renderCalendar(); // Re-render calendar to apply theme colors to bookmarks
-        }
-        headerTitle.addEventListener('click', async () => { /* ... */ });
-        function toggleCollapse(event, taskId) { /* ... */ }
-
-        // Initialize on load
-        renderCalendar();
-        
-        // --- Copying original functions that were unchanged to save space in prompt ---
-        function getTasks(userId) {
-            const tasksRef = collection(db, 'users', userId, 'tasks');
-            const q = query(tasksRef, orderBy('order'));
-            
-            setSyncStatus('syncing');
-            unsubscribeTasks = onSnapshot(q, (snapshot) => {
-                tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderTaskList();
-                updateMasterProgress();
-                setSyncStatus('synced');
-            }, (error) => {
-                console.error("Error fetching tasks:", error);
-                setSyncStatus('error');
-            });
-        }
-        function renderTaskList() {
-            taskListEl.innerHTML = '';
-            const taskMap = new Map(tasks.map(t => [t.id, {...t, children: []}]));
-            
-            const rootTasks = [];
-            for(const task of taskMap.values()){
-                if(task.parentId){
-                    const parent = taskMap.get(task.parentId);
-                    if(parent) parent.children.push(task);
-                } else {
-                    rootTasks.push(task);
-                }
-            }
-            
-            rootTasks.sort((a,b) => a.order - b.order).forEach(task => {
-                const taskElement = createTaskElement(task);
-                taskListEl.appendChild(taskElement);
-                renderChildren(task, taskElement);
-            });
-        }
-        function renderChildren(parentTask, parentElement) {
-            const container = parentElement.querySelector('.children-container');
-            if (!container) return;
-            
-            container.innerHTML = '';
-            parentTask.children.sort((a, b) => a.order - b.order).forEach(childTask => {
-                const childElement = createTaskElement(childTask);
-                container.appendChild(childElement);
-                renderChildren(childTask, childElement);
-            });
-        }
-        function createTaskElement(task) {
-            const isParent = tasks.some(t => t.parentId === task.id);
-            const canHaveChildren = task.level < 3;
-
-            const element = document.createElement('div');
-            element.className = `task-item card bg-white rounded-lg shadow p-3 level-${task.level} ${task.flagged ? 'flagged' : ''}`;
-            element.dataset.id = task.id;
-            
-            const subjectProgress = task.level === 0 ? getSubjectProgress(task.id) : -1;
-
-            element.innerHTML = `
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center flex-grow min-w-0">
-                        <i class="fas fa-chevron-right text-gray-400 mr-2 cursor-pointer flex-shrink-0 ${isParent ? '' : 'invisible'}"></i>
-                        <input type="checkbox" class="mr-3 h-5 w-5 rounded text-blue-600 focus:ring-blue-500 flex-shrink-0" ${task.completed ? 'checked' : ''}>
-                        <span class="task-name flex-grow truncate ${task.completed ? 'line-through text-gray-500' : ''}">${task.name}</span>
-                    </div>
-                    <div class="task-controls flex items-center space-x-3 text-gray-500 flex-shrink-0">
-                        ${canHaveChildren ? '<button class="control-btn add-child-btn"><i class="fas fa-plus"></i></button>' : ''}
-                        <button class="control-btn flag-btn"><i class="fas fa-flag ${task.flagged ? 'text-yellow-500' : ''}"></i></button>
-                        <button class="control-btn notes-btn"><i class="fas fa-note-sticky"></i></button>
-                        <button class="control-btn delete-btn"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>
-                ${task.level === 0 ? `
-                <div class="mt-2 pl-8">
-                    <div class="progress-container w-full bg-gray-200 rounded-full h-2.5">
-                        <div class="progress-bar h-2.5 rounded-full" style="width: ${subjectProgress}%;"></div>
-                    </div>
-                </div>
-                ` : ''}
-                <div class="children-container mt-2"></div>
-            `;
-
-            element.querySelector('.fa-chevron-right').addEventListener('click', (e) => toggleCollapse(e, task.id));
-            element.querySelector('input[type="checkbox"]').addEventListener('change', (e) => toggleComplete(task.id, e.target.checked));
-            element.querySelector('.task-name').addEventListener('click', () => editTaskName(element.querySelector('.task-name'), task.id));
-            element.querySelector('.delete-btn')?.addEventListener('click', () => deleteTask(task.id));
-            element.querySelector('.add-child-btn')?.addEventListener('click', () => addChildTask(task.id, task.level + 1));
-            element.querySelector('.flag-btn').addEventListener('click', () => toggleFlag(task.id, !task.flagged));
-            element.querySelector('.notes-btn').addEventListener('click', () => openTaskDetailModal(task.id));
-            return element;
-        }
-        document.getElementById('add-subject-btn').addEventListener('click', async () => {
-            const name = prompt("Enter new subject name:");
-            if(name && name.trim()) {
-                setSyncStatus('syncing');
-                await addDoc(collection(db, 'users', currentUserId, 'tasks'), { name: name.trim(), completed: false, level: 0, parentId: null, order: tasks.filter(t => t.level === 0).length, createdAt: serverTimestamp() });
-                setSyncStatus('synced');
-            }
-        });
-        async function addChildTask(parentId, level) {
-            const name = prompt(`Enter name for new item:`);
-            if (name && name.trim()) {
-                setSyncStatus('syncing');
-                const childrenCount = tasks.filter(t => t.parentId === parentId).length;
-                await addDoc(collection(db, 'users', currentUserId, 'tasks'), { name: name.trim(), completed: false, level: level, parentId: parentId, order: childrenCount, createdAt: serverTimestamp() });
-                setSyncStatus('synced');
-            }
-        }
-        async function editTaskName(element, taskId) {
-            const currentName = element.textContent;
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = currentName;
-            input.className = 'w-full p-1 border rounded';
-            element.replaceWith(input);
-            input.focus();
-            input.addEventListener('blur', async () => {
-                const newName = input.value.trim();
-                if (newName && newName !== currentName) {
-                    setSyncStatus('syncing');
-                    await updateDoc(doc(db, 'users', currentUserId, 'tasks', taskId), { name: newName });
-                }
-                // onSnapshot will re-render
-            });
-            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); });
-        }
-        async function deleteTask(taskId) {
-            if (!confirm("Are you sure you want to delete this task and all its sub-tasks?")) return;
-            setSyncStatus('syncing');
-            const batch = writeBatch(db);
-            getDescendants(taskId, true).forEach(task => {
-                batch.delete(doc(db, 'users', currentUserId, 'tasks', task.id));
-            });
-            await batch.commit();
-            setSyncStatus('synced');
-        }
-        async function toggleFlag(taskId, flagged) {
-            setSyncStatus('syncing');
-            await updateDoc(doc(db, 'users', currentUserId, 'tasks', taskId), { flagged });
-            setSyncStatus('synced');
-        }
-        async function toggleComplete(taskId, isCompleted) {
-            setSyncStatus('syncing');
-            const batch = writeBatch(db);
-            const task = tasks.find(t => t.id === taskId);
-            const descendants = getDescendants(taskId, false);
-            batch.update(doc(db, 'users', currentUserId, 'tasks', taskId), { completed: isCompleted });
-            descendants.forEach(d => batch.update(doc(db, 'users', currentUserId, 'tasks', d.id), { completed: isCompleted }));
-            let currentParentId = task.parentId;
-            while(currentParentId) {
-                const parent = tasks.find(t => t.id === currentParentId);
-                if(isCompleted) {
-                    const siblings = tasks.filter(t => t.parentId === currentParentId);
-                    const allComplete = siblings.every(s => tasks.find(ts => ts.id === s.id)?.completed);
-                    if (allComplete) batch.update(doc(db, 'users', currentUserId, 'tasks', currentParentId), { completed: true });
-                } else {
-                    batch.update(doc(db, 'users', currentUserId, 'tasks', currentParentId), { completed: false });
-                }
-                currentParentId = parent.parentId;
-            }
-            await batch.commit();
-            setSyncStatus('synced');
-        }
-        function updateMasterProgress() {
-            const subjects = tasks.filter(t => t.level === 0);
-            if (subjects.length === 0) {
-                document.getElementById('master-progress-bar').style.width = '0%';
-                return;
-            }
-            const completedSubjects = subjects.filter(s => s.completed).length;
-            const progress = (completedSubjects / subjects.length) * 100;
-            document.getElementById('master-progress-bar').style.width = `${progress}%`;
-        }
-        function getSubjectProgress(subjectId) {
-            const descendants = getDescendants(subjectId, false);
-            if (descendants.length === 0) return tasks.find(t => t.id === subjectId)?.completed ? 100 : 0;
-            const topics = descendants.filter(d => !tasks.some(t => t.parentId === d.id));
-            if (topics.length === 0) return tasks.find(t => t.id === subjectId)?.completed ? 100 : 0;
-            const completedTopics = topics.filter(t => t.completed).length;
-            return (completedTopics / topics.length) * 100;
-        }
-        async function handleBulkAdd() {
-            const text = document.getElementById('bulk-add-textarea').value;
-            if (!text.trim()) return;
-            setSyncStatus('syncing');
-            const lines = text.split('\n').filter(line => line.trim() !== '');
-            const batch = writeBatch(db);
-            const parentStack = [];
-            let lastLevel = -1;
-            const rootOrder = tasks.filter(t => t.level === 0).length;
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                const indentation = line.match(/^\s*/)[0].length;
-                const name = line.trim();
-                const level = Math.floor(indentation / 2);
-                while (level <= lastLevel && parentStack.length > 0) {
-                    parentStack.pop();
-                    lastLevel--;
-                }
-                const parentId = parentStack.length > 0 ? parentStack[parentStack.length - 1] : null;
-                const newDocRef = doc(collection(db, 'users', currentUserId, 'tasks'));
-                batch.set(newDocRef, { name, completed: false, level: parentId ? tasks.find(t => t.id === parentId).level + 1 : 0, parentId, order: 0, createdAt: serverTimestamp() });
-                parentStack.push(newDocRef.id);
-                lastLevel = level;
-            }
-            await batch.commit();
-            document.getElementById('bulk-add-textarea').value = '';
-            bulkAddModal.classList.add('hidden');
-            setSyncStatus('synced');
-        }
         function getDescendants(parentId, includeSelf = false) {
             let descendants = [];
             if(includeSelf) {
@@ -849,19 +870,40 @@
             }
             return descendants;
         }
+        document.getElementById('quit-btn').addEventListener('click', () => {
+            if (stopwatch.isRunning) stopStopwatch();
+            else saveStopwatchState();
+            signOut(auth).then(() => { window.location.href = 'index.html'; });
+        });
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const theme = btn.dataset.theme;
+                applyTheme(theme);
+                if (currentUserId) {
+                    setDoc(doc(db, 'users', currentUserId, 'settings'), { theme }, { merge: true });
+                }
+            });
+        });
+        function applyTheme(theme) {
+            document.body.className = theme;
+            renderCalendar();
+        }
         headerTitle.addEventListener('click', async () => {
             if(!currentUserId) return;
             const settingsDoc = await getDoc(doc(db, 'users', currentUserId, 'settings'));
             let currentVersion = settingsDoc.exists() ? settingsDoc.data().version || 1 : 1;
             await setDoc(doc(db, 'users', currentUserId, 'settings'), { version: currentVersion + 1 }, { merge: true });
         });
-        function toggleCollapse(event, taskId) {
+        async function toggleCollapse(event, taskId) {
             const icon = event.target;
             const taskElement = icon.closest('.task-item');
             const childrenContainer = taskElement.querySelector('.children-container');
-            icon.classList.toggle('fa-chevron-down');
-            icon.classList.toggle('fa-chevron-right');
-            childrenContainer.classList.toggle('hidden');
+            const isCollapsed = childrenContainer.classList.toggle('hidden');
+            icon.classList.toggle('fa-chevron-right', isCollapsed);
+            icon.classList.toggle('fa-chevron-down', !isCollapsed);
+            if (currentUserId) {
+                await updateDoc(doc(db, 'users', currentUserId, 'tasks', taskId), { collapsed: isCollapsed });
+            }
         }
     </script>
 </body>
