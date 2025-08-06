@@ -82,14 +82,14 @@
         .completed-task > span { text-decoration: line-through; color: var(--text-muted-color); }
         .dragging { opacity: 0.5; }
         .drag-over { border-top: 2px solid var(--primary-color); }
-        #video-background { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -10; pointer-events: none; }
+        #video-background { position: fixed; bottom: 1rem; right: 1rem; width: 320px; height: 180px; z-index: 100; pointer-events: none; }
         #video-background iframe { width: 100%; height: 100%; }
     </style>
 </head>
 <body class="theme-classic">
 
     <div id="video-background" class="hidden"></div>
-    <button id="close-video-bg-btn" class="hidden fixed top-4 right-28 z-50 retro-btn secondary">Close Video</button>
+    <button id="close-video-bg-btn" class="hidden fixed bottom-48 right-4 z-50 retro-btn secondary">Close Video</button>
 
     <div id="logged-out-view" class="hidden h-screen flex items-center justify-center p-4">
         <div class="surface p-12 space-y-4 text-center">
@@ -256,6 +256,8 @@
             settingsUnsubscribe = onSnapshot(settingsRef, (doc) => {
                 const settings = doc.exists() ? doc.data() : {};
                 applyTheme(settings.theme || 'classic', settings.themeNames || {});
+                bookmarkedDate = settings.bookmarkedDate || null;
+                renderCalendar(); 
             });
         };
 
@@ -279,6 +281,12 @@
             const user = auth.currentUser; if (!user) return;
             const settingsRef = doc(db, 'users', user.uid, 'settings', 'userSettings');
             setDoc(settingsRef, { themeNames: { [themeId]: newName } }, { merge: true });
+        };
+
+        const saveBookmarkedDate = (dateStr) => {
+            const user = auth.currentUser; if (!user) return;
+            const settingsRef = doc(db, 'users', user.uid, 'settings', 'userSettings');
+            setDoc(settingsRef, { bookmarkedDate: dateStr }, { merge: true });
         };
 
 
@@ -557,6 +565,7 @@
                 dayEl.title = `${count} tasks on ${new Date(year, month, day).toDateString()}`;
                 dayEl.addEventListener('click', () => {
                     bookmarkedDate = dateStr;
+                    saveBookmarkedDate(dateStr);
                     renderCalendar();
                 });
                 calendarGrid.appendChild(dayEl);
@@ -583,21 +592,6 @@
             `;
             showModal(content);
             renderAttachments(id, task.attachments || []);
-            document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
-            document.getElementById('modal-save-btn').addEventListener('click', () => {
-                const notes = document.getElementById('modal-notes').value;
-                const attachments = Array.from(document.getElementById('modal-attachments-list').querySelectorAll('[data-url]')).map(a => ({ url: a.dataset.url }));
-                updateTask(id, { notes, attachments });
-                closeModal();
-            });
-            document.getElementById('add-attachment-btn').addEventListener('click', () => {
-                const input = document.getElementById('new-attachment-input');
-                if (input.value.trim() === '') return;
-                const currentAttachments = Array.from(document.getElementById('modal-attachments-list').querySelectorAll('[data-url]')).map(a => ({ url: a.dataset.url }));
-                currentAttachments.push({ url: input.value });
-                renderAttachments(id, currentAttachments);
-                input.value = '';
-            });
         };
         
         const renderAttachments = (taskId, attachments) => {
@@ -624,22 +618,6 @@
             });
         };
         
-        modalContainer.addEventListener('click', (e) => {
-            if(e.target.closest('.remove-attachment-btn')) {
-                e.target.closest('.flex').remove();
-            }
-            if(e.target.closest('.play-bg-btn')) {
-                const url = e.target.closest('[data-url]').dataset.url;
-                const youtubeId = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-                if(youtubeId) {
-                    videoBackground.innerHTML = `<iframe src="https://www.youtube.com/embed/${youtubeId[1]}?autoplay=1&controls=0&loop=1&playlist=${youtubeId[1]}" frameborder="0"></iframe>`;
-                    videoBackground.classList.remove('hidden');
-                    closeVideoBgBtn.classList.remove('hidden');
-                    closeModal();
-                }
-            }
-        });
-
         const openBulkAddModal = (parentId) => {
             const parentTask = parentId ? allTasks.find(t => t.id === parentId) : null;
             const title = parentId ? 'BULK ADD TO SUBJECT' : 'BULK ADD NEW SUBJECTS';
@@ -676,8 +654,46 @@
                 closeModal();
             });
         };
+        
+        modalContainer.addEventListener('click', (e) => {
+            if(e.target.id === 'modal-cancel-btn') closeModal();
+            if(e.target.id === 'modal-save-btn') {
+                 const id = document.getElementById('modal-task-id').value;
+                 const notes = document.getElementById('modal-notes').value;
+                 const attachments = Array.from(document.getElementById('modal-attachments-list').querySelectorAll('[data-url]')).map(a => ({ url: a.dataset.url }));
+                 updateTask(id, { notes, attachments });
+                 closeModal();
+            }
+            if(e.target.id === 'add-attachment-btn') {
+                 const input = document.getElementById('new-attachment-input');
+                 if (input.value.trim() === '') return;
+                 const currentAttachments = Array.from(document.getElementById('modal-attachments-list').querySelectorAll('[data-url]')).map(a => ({ url: a.dataset.url }));
+                 currentAttachments.push({ url: input.value });
+                 renderAttachments(document.getElementById('modal-task-id').value, currentAttachments);
+                 input.value = '';
+            }
+            if(e.target.closest('.remove-attachment-btn')) {
+                e.target.closest('[data-url]').remove();
+            }
+            if(e.target.closest('.play-bg-btn')) {
+                const url = e.target.closest('[data-url]').dataset.url;
+                const youtubeId = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                if(youtubeId) {
+                    videoBackground.innerHTML = `<iframe src="https://www.youtube.com/embed/${youtubeId[1]}?autoplay=1&controls=0&loop=1&playlist=${youtubeId[1]}" frameborder="0"></iframe>`;
+                    videoBackground.classList.remove('hidden');
+                    closeVideoBgBtn.classList.remove('hidden');
+                    closeModal();
+                }
+            }
+        });
 
         // --- General Event Listeners ---
+        addSubjectBtn.addEventListener('click', () => {
+             const subjectName = prompt("Enter new subject name:");
+             if(subjectName && subjectName.trim() !== "") {
+                 addTask(subjectName.trim(), null, 0);
+             }
+        });
         signOutBtn.addEventListener('click', () => signOut(auth));
         themeSwitcher.addEventListener('click', (e) => {
             const themeBtn = e.target.closest('.theme-switcher-btn');
