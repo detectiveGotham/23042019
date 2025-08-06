@@ -6,7 +6,7 @@
     <title>Firebase Connection Test</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #1a1a1a; color: #e0e0e0; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        #status-box { background-color: #333; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        #status-box { background-color: #333; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: center; }
         h1 { margin-top: 0; }
         p { margin-bottom: 0; }
         .success { color: #4caf50; }
@@ -42,33 +42,30 @@
         async function runTest() {
             try {
                 // 1. Initialize Firebase
-                console.log("Initializing Firebase...");
                 statusEl.textContent = "Initializing Firebase...";
                 const app = initializeApp(firebaseConfig);
                 const auth = getAuth(app);
                 const db = getFirestore(app);
-                console.log("Firebase Initialized Successfully.");
                 statusEl.textContent = "Firebase Initialized Successfully.";
 
                 // 2. Sign in Anonymously
-                console.log("Signing in anonymously...");
                 statusEl.textContent = "Signing in anonymously...";
                 const userCredential = await signInAnonymously(auth);
                 const user = userCredential.user;
-                console.log("Signed in successfully with UID:", user.uid);
                 statusEl.textContent = `Signed in with UID: ${user.uid}`;
 
-                // 3. Write a document to Firestore
-                console.log("Attempting to write to Firestore...");
+                // 3. Write a document to Firestore in a location PERMITTED by the security rules
                 statusEl.textContent = "Attempting to write to Firestore...";
-                const testDocRef = doc(db, "test_collection", user.uid);
+                
+                // This is the corrected path that matches your security rules
+                const testDocRef = doc(db, "users", user.uid, "test_data", "test_doc");
+                
                 await setDoc(testDocRef, {
                     status: "success",
                     timestamp: serverTimestamp(),
-                    message: "This document was written by the test script."
+                    message: "This document was written by the corrected test script."
                 });
                 
-                console.log("Successfully wrote document to Firestore!");
                 statusEl.innerHTML = '<strong class="success">SUCCESS!</strong><br>Connection successful and data written to Firestore.';
 
             } catch (error) {
